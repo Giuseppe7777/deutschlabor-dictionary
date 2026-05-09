@@ -1,0 +1,953 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.editorconfig
+.gitignore
+.prettierrc
+angular.json
+package.json
+public/favicon.ico
+README.md
+src/app/app.config.server.ts
+src/app/app.config.ts
+src/app/app.css
+src/app/app.html
+src/app/app.routes.server.ts
+src/app/app.routes.ts
+src/app/app.spec.ts
+src/app/app.ts
+src/app/core/README.md
+src/app/features/account/README.md
+src/app/features/auth/README.md
+src/app/features/dictionary/README.md
+src/app/features/README.md
+src/app/features/training/README.md
+src/app/layout/header/header.css
+src/app/layout/header/header.html
+src/app/layout/header/header.spec.ts
+src/app/layout/header/header.ts
+src/app/layout/README.md
+src/app/ROUTING.md
+src/app/shared/README.md
+src/index.html
+src/main.server.ts
+src/main.ts
+src/server.ts
+src/styles.css
+tsconfig.app.json
+tsconfig.json
+tsconfig.spec.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".editorconfig">
+# Editor configuration, see https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.ts]
+quote_type = single
+ij_typescript_use_double_quotes = false
+
+[*.md]
+max_line_length = off
+trim_trailing_whitespace = false
+</file>
+
+<file path=".gitignore">
+# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+
+# Compiled output
+/dist
+/tmp
+/out-tsc
+/bazel-out
+
+# Node
+/node_modules
+npm-debug.log
+yarn-error.log
+
+# IDEs and editors
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/mcp.json
+.history/*
+
+# Miscellaneous
+/.angular/cache
+.sass-cache/
+/connect.lock
+/coverage
+/libpeerconnection.log
+testem.log
+/typings
+__screenshots__/
+
+# System files
+.DS_Store
+Thumbs.db
+</file>
+
+<file path=".prettierrc">
+{
+  "printWidth": 100,
+  "singleQuote": true,
+  "overrides": [
+    {
+      "files": "*.html",
+      "options": {
+        "parser": "angular"
+      }
+    }
+  ]
+}
+</file>
+
+<file path="angular.json">
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "cli": {
+    "packageManager": "npm"
+  },
+  "newProjectRoot": "projects",
+  "projects": {
+    "deutschlabor-dictionary": {
+      "projectType": "application",
+      "schematics": {},
+      "root": "",
+      "sourceRoot": "src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "src/main.ts",
+            "tsConfig": "tsconfig.app.json",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public"
+              }
+            ],
+            "styles": [
+              "src/styles.css"
+            ],
+            "server": "src/main.server.ts",
+            "outputMode": "server",
+            "security": {
+              "allowedHosts": []
+            },
+            "ssr": {
+              "entry": "src/server.ts"
+            }
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "deutschlabor-dictionary:build:production"
+            },
+            "development": {
+              "buildTarget": "deutschlabor-dictionary:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        }
+      }
+    }
+  }
+}
+</file>
+
+<file path="package.json">
+{
+  "name": "deutschlabor-dictionary",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "serve:ssr:deutschlabor-dictionary": "node dist/deutschlabor-dictionary/server/server.mjs"
+  },
+  "private": true,
+  "packageManager": "npm@11.6.3",
+  "dependencies": {
+    "@angular/common": "^21.2.0",
+    "@angular/compiler": "^21.2.0",
+    "@angular/core": "^21.2.0",
+    "@angular/forms": "^21.2.0",
+    "@angular/platform-browser": "^21.2.0",
+    "@angular/platform-server": "^21.2.0",
+    "@angular/router": "^21.2.0",
+    "@angular/ssr": "^21.2.10",
+    "express": "^5.1.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^21.2.10",
+    "@angular/cli": "^21.2.10",
+    "@angular/compiler-cli": "^21.2.0",
+    "@types/express": "^5.0.1",
+    "@types/node": "^20.17.19",
+    "jsdom": "^28.0.0",
+    "prettier": "^3.8.1",
+    "typescript": "~5.9.2",
+    "vitest": "^4.0.8"
+  }
+}
+</file>
+
+<file path="README.md">
+# DeutschlaborDictionary
+
+This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.10.
+
+## Development server
+
+To start a local development server, run:
+
+```bash
+ng serve
+```
+
+Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+
+## Code scaffolding
+
+Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+
+```bash
+ng generate component component-name
+```
+
+For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+
+```bash
+ng generate --help
+```
+
+## Building
+
+To build the project run:
+
+```bash
+ng build
+```
+
+This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+
+## Running unit tests
+
+To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+
+```bash
+ng test
+```
+
+## Running end-to-end tests
+
+For end-to-end (e2e) testing, run:
+
+```bash
+ng e2e
+```
+
+Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+
+## Additional Resources
+
+For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+</file>
+
+<file path="src/app/app.config.server.ts">
+import { mergeApplicationConfig, ApplicationConfig } from '@angular/core';
+import { provideServerRendering, withRoutes } from '@angular/ssr';
+import { appConfig } from './app.config';
+import { serverRoutes } from './app.routes.server';
+
+const serverConfig: ApplicationConfig = {
+  providers: [
+    provideServerRendering(withRoutes(serverRoutes))
+  ]
+};
+
+export const config = mergeApplicationConfig(appConfig, serverConfig);
+</file>
+
+<file path="src/app/app.config.ts">
+import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { provideRouter } from '@angular/router';
+
+import { routes } from './app.routes';
+import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    provideRouter(routes), provideClientHydration(withEventReplay())
+  ]
+};
+</file>
+
+<file path="src/app/app.css">
+
+</file>
+
+<file path="src/app/app.html">
+<header>
+  <app-header />
+</header>
+
+<main>
+  <router-outlet />
+</main>
+</file>
+
+<file path="src/app/app.routes.server.ts">
+import { RenderMode, ServerRoute } from '@angular/ssr';
+
+export const serverRoutes: ServerRoute[] = [
+  {
+    path: '**',
+    renderMode: RenderMode.Prerender
+  }
+];
+</file>
+
+<file path="src/app/app.routes.ts">
+import { Routes } from '@angular/router';
+
+export const routes: Routes = [];
+</file>
+
+<file path="src/app/app.spec.ts">
+import { TestBed } from '@angular/core/testing';
+import { App } from './app';
+
+describe('App', () => {
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [App],
+    }).compileComponents();
+  });
+
+  it('should create the app', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    expect(app).toBeTruthy();
+  });
+
+  it('should render title', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, deutschlabor-dictionary');
+  });
+});
+</file>
+
+<file path="src/app/app.ts">
+import { Component, signal } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { Header } from './layout/header/header';
+
+@Component({
+  selector: 'app-root',
+  imports: [RouterOutlet, Header],
+  templateUrl: './app.html',
+  styleUrl: './app.css'
+})
+export class App {
+  protected readonly title = signal('deutschlabor-dictionary');
+}
+</file>
+
+<file path="src/app/core/README.md">
+# Core
+
+This folder contains application-level Angular code.
+
+Use this folder for:
+- global services
+- route guards
+- HTTP interceptors
+- authentication state
+- API error handling
+- CSRF handling
+- language headers for API requests
+
+Do not use this folder for:
+- page components
+- feature-specific UI
+- dictionary search UI
+- training UI
+- account page UI
+
+Rule:
+Code in `core` belongs to the whole application, not to one specific feature.
+</file>
+
+<file path="src/app/features/account/README.md">
+# Account Feature
+
+This folder contains the user account area.
+
+Use this folder for:
+- account overview page
+- profile page
+- language settings UI
+- default dictionary pair settings UI
+- email verification status UI
+- passkey management UI
+- session/device management UI
+- recovery flow UI
+
+Do not use this folder for:
+- global authentication state
+- global HTTP interceptors
+- global route guards
+- dictionary search logic
+- training logic
+
+Rule:
+Account feature UI belongs here.
+Application-wide user/session state belongs to `core`.
+</file>
+
+<file path="src/app/features/auth/README.md">
+# Auth Feature
+
+This folder contains the authentication feature UI and feature-specific code.
+
+Use this folder for:
+- register page
+- login page
+- passkey registration UI
+- passkey login UI
+- email verification notice UI
+- verify email result page
+- resend verification email UI
+- logout-related UI if needed
+
+Do not use this folder for:
+- global authentication state
+- global HTTP interceptors
+- global route guards
+- CSRF handling
+- application-wide user session logic
+
+Rule:
+Auth feature UI belongs here.
+Application-wide authentication state and infrastructure belong to `core`.
+</file>
+
+<file path="src/app/features/dictionary/README.md">
+# Dictionary Feature
+
+This folder contains the dictionary search feature.
+
+Use this folder for:
+- dictionary search page
+- search input UI
+- autocomplete UI
+- language pair selector
+- search results UI
+- searched words UI
+- dictionary-specific services
+- dictionary-specific models
+
+Do not use this folder for:
+- global authentication state
+- global HTTP interceptors
+- global route guards
+- account settings UI
+- training session UI
+- reusable shared UI components used by many features
+
+Rule:
+Dictionary feature code belongs here when it is directly related to word search, language pairs, search results, or searched words.
+</file>
+
+<file path="src/app/features/README.md">
+# Features
+
+This folder contains the main product features of the DeutschLabor Dictionary application.
+
+Use this folder for:
+- authentication feature
+- account feature
+- dictionary feature
+- training feature
+- feature-specific pages
+- feature-specific components
+- feature-specific services
+
+Do not use this folder for:
+- global application services
+- global HTTP interceptors
+- global route guards
+- reusable shared UI components
+- layout shell components
+
+Rule:
+Each feature should contain code that belongs to one product area.
+Shared code goes to `shared`.
+Application-wide code goes to `core`.
+Stable layout code goes to `layout`.
+</file>
+
+<file path="src/app/features/training/README.md">
+# Training Feature
+
+This folder contains the word training feature.
+
+Use this folder for:
+- training overview page
+- words due for review UI
+- review list UI
+- training start UI
+- training session UI
+- answer input UI
+- training result UI
+- training-specific services
+- training-specific models
+
+Do not use this folder for:
+- global authentication state
+- global HTTP interceptors
+- global route guards
+- dictionary search UI
+- account settings UI
+- reusable shared UI components used by many features
+
+Rule:
+Training feature code belongs here when it is directly related to reviewing, practicing, grading, or repeating searched words.
+</file>
+
+<file path="src/app/layout/header/header.css">
+
+</file>
+
+<file path="src/app/layout/header/header.html">
+<p>DeutschLabor Header works</p>
+</file>
+
+<file path="src/app/layout/header/header.spec.ts">
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { Header } from './header';
+
+describe('Header', () => {
+  let component: Header;
+  let fixture: ComponentFixture<Header>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [Header],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(Header);
+    component = fixture.componentInstance;
+    await fixture.whenStable();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});
+</file>
+
+<file path="src/app/layout/header/header.ts">
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-header',
+  imports: [],
+  templateUrl: './header.html',
+  styleUrl: './header.css',
+})
+export class Header {}
+</file>
+
+<file path="src/app/layout/README.md">
+# Layout
+
+This folder contains application layout components.
+
+Use this folder for:
+- header
+- navigation
+- footer
+- language switcher in the main layout
+- account menu
+- training badge in the navigation
+- layout shell components
+
+Do not use this folder for:
+- page components
+- API services
+- authentication state
+- dictionary search logic
+- training logic
+
+Rule:
+Code in `layout` defines the stable visual frame of the application.
+Feature pages are rendered inside the layout through Angular routing and `router-outlet`.
+</file>
+
+<file path="src/app/ROUTING.md">
+# Routing Architecture
+
+This file describes the planned route structure for the DeutschLabor Dictionary frontend.
+
+## Current rule
+
+Routes are defined in:
+
+`src/app/app.routes.ts`
+
+The root application template contains:
+
+`<router-outlet />`
+
+Angular Router renders page components inside this outlet based on the current URL.
+
+## Planned public routes
+
+- `/`  
+  Main dictionary search page.
+
+- `/login`  
+  Passkey login page.
+
+- `/register`  
+  Passkey registration page.
+
+- `/verify-email`  
+  Email verification result page.
+
+## Planned protected routes
+
+- `/account`  
+  User account area.
+
+- `/training`  
+  Word training area.
+
+## Feature ownership
+
+- Dictionary routes belong to `features/dictionary`.
+- Auth routes belong to `features/auth`.
+- Account routes belong to `features/account`.
+- Training routes belong to `features/training`.
+
+## Important rule
+
+`App` is the root component and must not be used as a routed page component.
+
+Routed pages are inserted into `<router-outlet />`.
+
+The application layout, such as header and navigation, stays outside the routed page components.
+</file>
+
+<file path="src/app/shared/README.md">
+# Shared
+
+This folder contains reusable Angular code used by multiple features.
+
+Use this folder for:
+- shared UI components
+- reusable form controls
+- loading indicators
+- error message components
+- small reusable pipes
+- small reusable helper functions
+
+Do not use this folder for:
+- global application state
+- authentication state
+- HTTP interceptors
+- route guards
+- feature-specific page components
+
+Rule:
+Code in `shared` must be reusable by more than one feature.
+</file>
+
+<file path="src/index.html">
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>DeutschlaborDictionary</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+<body>
+  <app-root></app-root>
+</body>
+</html>
+</file>
+
+<file path="src/main.server.ts">
+import { BootstrapContext, bootstrapApplication } from '@angular/platform-browser';
+import { App } from './app/app';
+import { config } from './app/app.config.server';
+
+const bootstrap = (context: BootstrapContext) =>
+    bootstrapApplication(App, config, context);
+
+export default bootstrap;
+</file>
+
+<file path="src/main.ts">
+import { bootstrapApplication } from '@angular/platform-browser';
+import { appConfig } from './app/app.config';
+import { App } from './app/app';
+
+bootstrapApplication(App, appConfig)
+  .catch((err) => console.error(err));
+</file>
+
+<file path="src/server.ts">
+import {
+  AngularNodeAppEngine,
+  createNodeRequestHandler,
+  isMainModule,
+  writeResponseToNodeResponse,
+} from '@angular/ssr/node';
+import express from 'express';
+import { join } from 'node:path';
+
+const browserDistFolder = join(import.meta.dirname, '../browser');
+
+const app = express();
+const angularApp = new AngularNodeAppEngine();
+
+/**
+ * Example Express Rest API endpoints can be defined here.
+ * Uncomment and define endpoints as necessary.
+ *
+ * Example:
+ * ```ts
+ * app.get('/api/{*splat}', (req, res) => {
+ *   // Handle API request
+ * });
+ * ```
+ */
+
+/**
+ * Serve static files from /browser
+ */
+app.use(
+  express.static(browserDistFolder, {
+    maxAge: '1y',
+    index: false,
+    redirect: false,
+  }),
+);
+
+/**
+ * Handle all other requests by rendering the Angular application.
+ */
+app.use((req, res, next) => {
+  angularApp
+    .handle(req)
+    .then((response) =>
+      response ? writeResponseToNodeResponse(response, res) : next(),
+    )
+    .catch(next);
+});
+
+/**
+ * Start the server if this module is the main entry point, or it is ran via PM2.
+ * The server listens on the port defined by the `PORT` environment variable, or defaults to 4000.
+ */
+if (isMainModule(import.meta.url) || process.env['pm_id']) {
+  const port = process.env['PORT'] || 4000;
+  app.listen(port, (error) => {
+    if (error) {
+      throw error;
+    }
+
+    console.log(`Node Express server listening on http://localhost:${port}`);
+  });
+}
+
+/**
+ * Request handler used by the Angular CLI (for dev-server and during build) or Firebase Cloud Functions.
+ */
+export const reqHandler = createNodeRequestHandler(app);
+</file>
+
+<file path="src/styles.css">
+/* You can add global styles to this file, and also import other style files */
+</file>
+
+<file path="tsconfig.app.json">
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/app",
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "src/**/*.spec.ts"
+  ]
+}
+</file>
+
+<file path="tsconfig.json">
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "preserve"
+  },
+  "angularCompilerOptions": {
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.spec.json"
+    }
+  ]
+}
+</file>
+
+<file path="tsconfig.spec.json">
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/spec",
+    "types": [
+      "vitest/globals"
+    ]
+  },
+  "include": [
+    "src/**/*.d.ts",
+    "src/**/*.spec.ts"
+  ]
+}
+</file>
+
+</files>

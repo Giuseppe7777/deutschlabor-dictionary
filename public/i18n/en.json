@@ -1,0 +1,9 @@
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "language": "Language"
+  }
+}

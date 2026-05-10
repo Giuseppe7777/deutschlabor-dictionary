@@ -2,7 +2,7 @@ export const SUPPORTED_INTERFACE_LANGUAGES = [
   'de',
   'en',
   'uk',
-  'ru',
+  'ru', 
   'pl',
   'hu',
 ] as const;
@@ -11,7 +11,7 @@ export type InterfaceLanguage = (typeof SUPPORTED_INTERFACE_LANGUAGES)[number];
 
 export const DEFAULT_INTERFACE_LANGUAGE: InterfaceLanguage = 'de';
 
-export const INTERFACE_LANGUAGE_STORAGE_KEY = 'deutschlabor.interfaceLanguage';
+export const INTERFACE_LANGUAGE_STORAGE_KEY = 'deutschlabor.interfaceLanguage'; 
 
 export function isSupportedInterfaceLanguage(
   value: string | null | undefined,

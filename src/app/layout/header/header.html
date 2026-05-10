@@ -1,1 +1,21 @@
-<p>{{ 'header.brand' | translate }} — {{ 'header.language' | translate }}</p>
+<div class="app-header">
+  <p>
+    {{ 'header.brand' | translate }}
+    —
+    {{ 'header.language' | translate }}:
+    {{ currentLanguage() }}
+  </p>
+
+  <div class="languagee-switcher" aria-label="Interface languagee">
+    @for (language of supportedLanguages; track language) {
+      <button
+        type="button"
+        [class.is-active]="language === currentLanguage()"
+        [attr.aria-current]="language === currentLanguage() ? 'true' : null"
+        (click)="changeLanguage(language)"
+      >
+        {{ language.toUpperCase() }}
+      </button>
+    }
+  </div>
+</div>

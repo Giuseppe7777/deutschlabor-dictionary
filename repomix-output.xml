@@ -46,6 +46,12 @@ The content is organized as follows:
 angular.json
 package.json
 public/favicon.ico
+public/i18n/de.json
+public/i18n/en.json
+public/i18n/hu.json
+public/i18n/pl.json
+public/i18n/ru.json
+public/i18n/uk.json
 README.md
 src/app/app.config.server.ts
 src/app/app.config.ts
@@ -55,6 +61,7 @@ src/app/app.routes.server.ts
 src/app/app.routes.ts
 src/app/app.spec.ts
 src/app/app.ts
+src/app/core/i18n/interface-language.ts
 src/app/core/README.md
 src/app/features/account/README.md
 src/app/features/auth/README.md
@@ -247,43 +254,74 @@ Thumbs.db
 }
 </file>
 
-<file path="package.json">
+<file path="public/i18n/de.json">
 {
-  "name": "deutschlabor-dictionary",
-  "version": "0.0.0",
-  "scripts": {
-    "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "serve:ssr:deutschlabor-dictionary": "node dist/deutschlabor-dictionary/server/server.mjs"
+  "app": {
+    "name": "DeutschLabor"
   },
-  "private": true,
-  "packageManager": "npm@11.6.3",
-  "dependencies": {
-    "@angular/common": "^21.2.0",
-    "@angular/compiler": "^21.2.0",
-    "@angular/core": "^21.2.0",
-    "@angular/forms": "^21.2.0",
-    "@angular/platform-browser": "^21.2.0",
-    "@angular/platform-server": "^21.2.0",
-    "@angular/router": "^21.2.0",
-    "@angular/ssr": "^21.2.10",
-    "express": "^5.1.0",
-    "rxjs": "~7.8.0",
-    "tslib": "^2.3.0"
+  "header": {
+    "brand": "DeutschLabor",
+    "language": "Sprache"
+  }
+}
+</file>
+
+<file path="public/i18n/en.json">
+{
+  "app": {
+    "name": "DeutschLabor"
   },
-  "devDependencies": {
-    "@angular/build": "^21.2.10",
-    "@angular/cli": "^21.2.10",
-    "@angular/compiler-cli": "^21.2.0",
-    "@types/express": "^5.0.1",
-    "@types/node": "^20.17.19",
-    "jsdom": "^28.0.0",
-    "prettier": "^3.8.1",
-    "typescript": "~5.9.2",
-    "vitest": "^4.0.8"
+  "header": {
+    "brand": "DeutschLabor",
+    "language": "Language"
+  }
+}
+</file>
+
+<file path="public/i18n/hu.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "language": "Nyelv"
+  }
+}
+</file>
+
+<file path="public/i18n/pl.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "language": "Język"
+  }
+}
+</file>
+
+<file path="public/i18n/ru.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "language": "Язык"
+  }
+}
+</file>
+
+<file path="public/i18n/uk.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "language": "Мова"
   }
 }
 </file>
@@ -365,21 +403,6 @@ const serverConfig: ApplicationConfig = {
 export const config = mergeApplicationConfig(appConfig, serverConfig);
 </file>
 
-<file path="src/app/app.config.ts">
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter } from '@angular/router';
-
-import { routes } from './app.routes';
-import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
-
-export const appConfig: ApplicationConfig = {
-  providers: [
-    provideBrowserGlobalErrorListeners(),
-    provideRouter(routes), provideClientHydration(withEventReplay())
-  ]
-};
-</file>
-
 <file path="src/app/app.css">
 
 </file>
@@ -392,17 +415,6 @@ export const appConfig: ApplicationConfig = {
 <main>
   <router-outlet />
 </main>
-</file>
-
-<file path="src/app/app.routes.server.ts">
-import { RenderMode, ServerRoute } from '@angular/ssr';
-
-export const serverRoutes: ServerRoute[] = [
-  {
-    path: '**',
-    renderMode: RenderMode.Prerender
-  }
-];
 </file>
 
 <file path="src/app/app.routes.ts">
@@ -450,6 +462,32 @@ import { Header } from './layout/header/header';
 })
 export class App {
   protected readonly title = signal('deutschlabor-dictionary');
+}
+</file>
+
+<file path="src/app/core/i18n/interface-language.ts">
+export const SUPPORTED_INTERFACE_LANGUAGES = [
+  'de',
+  'en',
+  'uk',
+  'ru',
+  'pl',
+  'hu',
+] as const;
+
+export type InterfaceLanguage = (typeof SUPPORTED_INTERFACE_LANGUAGES)[number];
+
+export const DEFAULT_INTERFACE_LANGUAGE: InterfaceLanguage = 'de';
+
+export const INTERFACE_LANGUAGE_STORAGE_KEY = 'deutschlabor.interfaceLanguage';
+
+export function isSupportedInterfaceLanguage(
+  value: string | null | undefined,
+): value is InterfaceLanguage {
+  return (
+    typeof value === 'string' &&
+    (SUPPORTED_INTERFACE_LANGUAGES as readonly string[]).includes(value)
+  );
 }
 </file>
 
@@ -619,10 +657,6 @@ Training feature code belongs here when it is directly related to reviewing, pra
 
 </file>
 
-<file path="src/app/layout/header/header.html">
-<p>DeutschLabor Header works</p>
-</file>
-
 <file path="src/app/layout/header/header.spec.ts">
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -646,18 +680,6 @@ describe('Header', () => {
     expect(component).toBeTruthy();
   });
 });
-</file>
-
-<file path="src/app/layout/header/header.ts">
-import { Component } from '@angular/core';
-
-@Component({
-  selector: 'app-header',
-  imports: [],
-  templateUrl: './header.html',
-  styleUrl: './header.css',
-})
-export class Header {}
 </file>
 
 <file path="src/app/layout/README.md">
@@ -948,6 +970,107 @@ export const reqHandler = createNodeRequestHandler(app);
     "src/**/*.spec.ts"
   ]
 }
+</file>
+
+<file path="package.json">
+{
+  "name": "deutschlabor-dictionary",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "serve:ssr:deutschlabor-dictionary": "node dist/deutschlabor-dictionary/server/server.mjs"
+  },
+  "private": true,
+  "packageManager": "npm@11.6.3",
+  "dependencies": {
+    "@angular/common": "^21.2.0",
+    "@angular/compiler": "^21.2.0",
+    "@angular/core": "^21.2.0",
+    "@angular/forms": "^21.2.0",
+    "@angular/platform-browser": "^21.2.0",
+    "@angular/platform-server": "^21.2.0",
+    "@angular/router": "^21.2.0",
+    "@angular/ssr": "^21.2.10",
+    "@ngx-translate/core": "^17.0.0",
+    "@ngx-translate/http-loader": "^17.0.0",
+    "express": "^5.1.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^21.2.10",
+    "@angular/cli": "^21.2.10",
+    "@angular/compiler-cli": "^21.2.0",
+    "@types/express": "^5.0.1",
+    "@types/node": "^20.17.19",
+    "jsdom": "^28.0.0",
+    "prettier": "^3.8.1",
+    "typescript": "~5.9.2",
+    "vitest": "^4.0.8"
+  }
+}
+</file>
+
+<file path="src/app/app.config.ts">
+import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { provideRouter } from '@angular/router';
+import { provideTranslateService } from '@ngx-translate/core';
+import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
+
+import { routes } from './app.routes';
+import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
+import { DEFAULT_INTERFACE_LANGUAGE } from './core/i18n/interface-language';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    provideRouter(routes),
+    provideClientHydration(withEventReplay()),
+    provideHttpClient(),
+
+    provideTranslateService({
+      loader: provideTranslateHttpLoader({
+        prefix: '/i18n/',
+        suffix: '.json',
+      }),
+      fallbackLang: DEFAULT_INTERFACE_LANGUAGE,
+      lang: DEFAULT_INTERFACE_LANGUAGE,
+    }),
+  ],
+};
+</file>
+
+<file path="src/app/app.routes.server.ts">
+import { RenderMode, ServerRoute } from '@angular/ssr';
+
+export const serverRoutes: ServerRoute[] = [
+  {
+    path: '**',
+    renderMode: RenderMode.Server
+  }
+];
+</file>
+
+<file path="src/app/layout/header/header.html">
+<p>{{ 'header.brand' | translate }} — {{ 'header.language' | translate }}</p>
+</file>
+
+<file path="src/app/layout/header/header.ts">
+import { Component } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
+
+@Component({
+  selector: 'app-header',
+  imports: [TranslatePipe],
+  templateUrl: './header.html',
+  styleUrl: './header.css',
+})
+export class Header {}
 </file>
 
 </files>

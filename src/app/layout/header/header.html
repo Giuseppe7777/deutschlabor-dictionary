@@ -1,21 +1,59 @@
 <div class="app-header">
-  <p>
-    {{ 'header.brand' | translate }}
-    —
-    {{ 'header.language' | translate }}:
-    {{ currentLanguage() }}
-  </p>
+  <a class="brand" [routerLink]="localizedPath('')" aria-label="DeutschLabor">
+    <img
+      class="brand-logo"
+      src="/brand/dl-logo.png"
+      alt="DeutschLabor"
+      width="2172"
+      height="724"
+    >
 
-  <div class="languagee-switcher" aria-label="Interface languagee">
-    @for (language of supportedLanguages; track language) {
-      <button
-        type="button"
-        [class.is-active]="language === currentLanguage()"
-        [attr.aria-current]="language === currentLanguage() ? 'true' : null"
-        (click)="changeLanguage(language)"
-      >
-        {{ language.toUpperCase() }}
-      </button>
-    }
+    <span class="brand-slogan">
+      {{ 'header.slogan' | translate }}
+    </span>
+  </a>
+
+  <nav class="main-nav" [attr.aria-label]="'header.mainNavigation' | translate">
+    <a
+      [routerLink]="localizedPath('')"
+      routerLinkActive="is-active"
+      [routerLinkActiveOptions]="{ exact: true }"
+    >
+      {{ 'nav.search' | translate }}
+    </a>
+
+    <a [routerLink]="localizedPath('training')" routerLinkActive="is-active">
+      {{ 'nav.training' | translate }}
+      <span class="nav-badge">0</span>
+    </a>
+
+    <a [routerLink]="localizedPath('account')" routerLinkActive="is-active">
+      {{ 'nav.account' | translate }}
+    </a>
+  </nav>
+
+  <div class="header-actions">
+    <div class="language-switcher" [attr.aria-label]="'header.language' | translate">
+      @for (language of supportedLanguages; track language) {
+        <button
+          type="button"
+          [class.is-active]="language === currentLanguage()"
+          [attr.aria-current]="language === currentLanguage() ? 'true' : null"
+          (click)="changeLanguage(language)"
+        >
+          {{ language.toUpperCase() }}
+        </button>
+      }
+    </div>
+
+    <div class="auth-links">
+      <a [routerLink]="localizedPath('login')">
+        {{ 'auth.login' | translate }}
+      </a>
+
+      <a class="auth-primary" [routerLink]="localizedPath('register')">
+        {{ 'auth.register' | translate }}
+      </a>
+    </div>
   </div>
 </div>

@@ -61,10 +61,16 @@ src/app/app.routes.server.ts
 src/app/app.routes.ts
 src/app/app.spec.ts
 src/app/app.ts
+src/app/core/i18n/accept-language.interceptor.ts
+src/app/core/i18n/interface-language-route.service.ts
+src/app/core/i18n/interface-language-storage.service.ts
+src/app/core/i18n/interface-language-url.matcher.ts
+src/app/core/i18n/interface-language.service.ts
 src/app/core/i18n/interface-language.ts
 src/app/core/README.md
 src/app/features/account/README.md
 src/app/features/auth/README.md
+src/app/features/dictionary/models/dictionary-language-pair.ts
 src/app/features/dictionary/README.md
 src/app/features/README.md
 src/app/features/training/README.md
@@ -261,7 +267,18 @@ Thumbs.db
   },
   "header": {
     "brand": "DeutschLabor",
-    "language": "Sprache"
+    "slogan": "Lernen · Üben · Verstehen · Sprechen",
+    "language": "Sprache",
+    "mainNavigation": "Hauptnavigation"
+  },
+  "nav": {
+    "search": "Suche",
+    "training": "Training",
+    "account": "Konto"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "register": "Registrieren"
   }
 }
 </file>
@@ -273,7 +290,18 @@ Thumbs.db
   },
   "header": {
     "brand": "DeutschLabor",
-    "language": "Language"
+    "slogan": "Learn · Practise · Understand · Speak",
+    "language": "Language",
+    "mainNavigation": "Main navigation"
+  },
+  "nav": {
+    "search": "Search",
+    "training": "Training",
+    "account": "Account"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Register"
   }
 }
 </file>
@@ -285,7 +313,18 @@ Thumbs.db
   },
   "header": {
     "brand": "DeutschLabor",
-    "language": "Nyelv"
+    "slogan": "Tanulni · Gyakorolni · Érteni · Beszélni",
+    "language": "Nyelv",
+    "mainNavigation": "Fő navigáció"
+  },
+  "nav": {
+    "search": "Keresés",
+    "training": "Gyakorlás",
+    "account": "Fiók"
+  },
+  "auth": {
+    "login": "Belépés",
+    "register": "Regisztráció"
   }
 }
 </file>
@@ -297,7 +336,18 @@ Thumbs.db
   },
   "header": {
     "brand": "DeutschLabor",
-    "language": "Język"
+    "slogan": "Uczyć się · Ćwiczyć · Rozumieć · Mówić",
+    "language": "Język",
+    "mainNavigation": "Główna nawigacja"
+  },
+  "nav": {
+    "search": "Szukaj",
+    "training": "Trening",
+    "account": "Konto"
+  },
+  "auth": {
+    "login": "Logowanie",
+    "register": "Rejestracja"
   }
 }
 </file>
@@ -309,7 +359,18 @@ Thumbs.db
   },
   "header": {
     "brand": "DeutschLabor",
-    "language": "Язык"
+    "slogan": "Учить · Тренировать · Понимать · Говорить",
+    "language": "Язык",
+    "mainNavigation": "Главная навигация"
+  },
+  "nav": {
+    "search": "Поиск",
+    "training": "Тренировка",
+    "account": "Кабинет"
+  },
+  "auth": {
+    "login": "Вход",
+    "register": "Регистрация"
   }
 }
 </file>
@@ -321,7 +382,18 @@ Thumbs.db
   },
   "header": {
     "brand": "DeutschLabor",
-    "language": "Мова"
+    "slogan": "Вчити · Тренувати · Розуміти · Говорити",
+    "language": "Мова",
+    "mainNavigation": "Головна навігація"
+  },
+  "nav": {
+    "search": "Пошук",
+    "training": "Тренування",
+    "account": "Кабінет"
+  },
+  "auth": {
+    "login": "Вхід",
+    "register": "Реєстрація"
   }
 }
 </file>
@@ -417,12 +489,6 @@ export const config = mergeApplicationConfig(appConfig, serverConfig);
 </main>
 </file>
 
-<file path="src/app/app.routes.ts">
-import { Routes } from '@angular/router';
-
-export const routes: Routes = [];
-</file>
-
 <file path="src/app/app.spec.ts">
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
@@ -439,81 +505,212 @@ describe('App', () => {
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
   });
-
-  it('should render title', async () => {
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, deutschlabor-dictionary');
-  });
+  
 });
 </file>
 
-<file path="src/app/app.ts">
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { Header } from './layout/header/header';
+<file path="src/app/core/i18n/accept-language.interceptor.ts">
+import { inject } from '@angular/core';
+import { HttpInterceptorFn } from '@angular/common/http';
 
-@Component({
-  selector: 'app-root',
-  imports: [RouterOutlet, Header],
-  templateUrl: './app.html',
-  styleUrl: './app.css'
+import { InterfaceLanguageService } from './interface-language.service';
+
+export const acceptLanguageInterceptor: HttpInterceptorFn = (request, next) => {
+  if (!isBackendRequest(request.url)) {
+    return next(request);
+  }
+
+  const interfaceLanguageService = inject(InterfaceLanguageService);
+  const language = interfaceLanguageService.currentLanguage();
+
+  const requestWithLanguage = request.clone({
+    setHeaders: {
+      'Accept-Language': language,
+    },
+  });
+
+  return next(requestWithLanguage);
+};
+
+function isBackendRequest(url: string): boolean {
+  const pathname = extractPathname(url);
+
+  return pathname.startsWith('/api/') || pathname.startsWith('/auth/');
+}
+
+function extractPathname(url: string): string {
+  try {
+    return new URL(url, 'http://localhost').pathname;
+  } catch {
+    return url;
+  }
+}
+</file>
+
+<file path="src/app/core/i18n/interface-language-route.service.ts">
+import { inject, Injectable } from '@angular/core';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs';
+
+import { InterfaceLanguageService } from './interface-language.service';
+
+@Injectable({
+  providedIn: 'root',
 })
-export class App {
-  protected readonly title = signal('deutschlabor-dictionary');
+export class InterfaceLanguageRouteService {
+  private readonly router = inject(Router);
+  private readonly interfaceLanguageService = inject(InterfaceLanguageService);
+
+  constructor() {
+    this.syncLanguageFromUrl(this.router.url);
+
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      )
+      .subscribe((event) => {
+        this.syncLanguageFromUrl(event.urlAfterRedirects);
+      });
+  }
+
+  private syncLanguageFromUrl(url: string): void {
+    const pathWithoutQuery = url.split(/[?#]/)[0];
+    const firstSegment = pathWithoutQuery.split('/').filter(Boolean)[0];
+
+    this.interfaceLanguageService.setLanguageFromUnknown(firstSegment);
+  }
 }
 </file>
 
-<file path="src/app/core/i18n/interface-language.ts">
-export const SUPPORTED_INTERFACE_LANGUAGES = [
-  'de',
-  'en',
-  'uk',
-  'ru',
-  'pl',
-  'hu',
-] as const;
+<file path="src/app/core/i18n/interface-language-storage.service.ts">
+import { isPlatformBrowser } from '@angular/common';
+import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 
-export type InterfaceLanguage = (typeof SUPPORTED_INTERFACE_LANGUAGES)[number];
+import {
+  INTERFACE_LANGUAGE_STORAGE_KEY,
+  InterfaceLanguage,
+  isSupportedInterfaceLanguage,
+} from './interface-language';
 
-export const DEFAULT_INTERFACE_LANGUAGE: InterfaceLanguage = 'de';
+@Injectable({
+  providedIn: 'root',
+})
+export class InterfaceLanguageStorageService {
+  private readonly platformId = inject(PLATFORM_ID);
 
-export const INTERFACE_LANGUAGE_STORAGE_KEY = 'deutschlabor.interfaceLanguage';
+  read(): InterfaceLanguage | null {
+    if (!this.isBrowser()) {
+      return null;
+    }
 
-export function isSupportedInterfaceLanguage(
-  value: string | null | undefined,
-): value is InterfaceLanguage {
-  return (
-    typeof value === 'string' &&
-    (SUPPORTED_INTERFACE_LANGUAGES as readonly string[]).includes(value)
+    const storedLanguage = localStorage.getItem(INTERFACE_LANGUAGE_STORAGE_KEY);
+
+    if (!isSupportedInterfaceLanguage(storedLanguage)) {
+      return null;
+    }
+
+    return storedLanguage;
+  }
+
+  write(language: InterfaceLanguage): void {
+    if (!this.isBrowser()) {
+      return;
+    }
+
+    localStorage.setItem(INTERFACE_LANGUAGE_STORAGE_KEY, language);
+  }
+
+  private isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+}
+</file>
+
+<file path="src/app/core/i18n/interface-language-url.matcher.ts">
+import { UrlMatcher, UrlSegment } from '@angular/router';
+
+import { isSupportedInterfaceLanguage } from './interface-language';
+
+export const interfaceLanguageUrlMatcher: UrlMatcher = (
+  segments: UrlSegment[],
+) => {
+  if (segments.length === 0) {
+    return null;
+  }
+
+  const possibleLanguage = segments[0].path;
+
+  if (!isSupportedInterfaceLanguage(possibleLanguage)) {
+    return null;
+  }
+
+  return {
+    consumed: [segments[0]],
+    posParams: {
+      language: segments[0],
+    },
+  };
+};
+</file>
+
+<file path="src/app/core/i18n/interface-language.service.ts">
+import { inject, Injectable, signal } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
+
+import {
+  DEFAULT_INTERFACE_LANGUAGE,
+  InterfaceLanguage,
+  isSupportedInterfaceLanguage,
+  SUPPORTED_INTERFACE_LANGUAGES,
+} from './interface-language';
+import { InterfaceLanguageStorageService } from './interface-language-storage.service';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class InterfaceLanguageService {
+  private readonly translate = inject(TranslateService);
+  private readonly storage = inject(InterfaceLanguageStorageService);
+
+  private readonly currentLanguageSignal = signal<InterfaceLanguage>(
+    DEFAULT_INTERFACE_LANGUAGE,
   );
+
+  readonly currentLanguage = this.currentLanguageSignal.asReadonly();
+  readonly supportedLanguages = SUPPORTED_INTERFACE_LANGUAGES;
+
+  constructor() {
+    this.translate.addLangs([...SUPPORTED_INTERFACE_LANGUAGES]);
+    this.translate.setFallbackLang(DEFAULT_INTERFACE_LANGUAGE);
+
+    const storedLanguage = this.storage.read();
+
+    this.activateLanguage(storedLanguage ?? DEFAULT_INTERFACE_LANGUAGE, false);
+  }
+
+  setLanguage(language: InterfaceLanguage): void {
+    this.activateLanguage(language, true);
+  }
+
+  setLanguageFromUnknown(value: string | null | undefined): boolean {
+    if (!isSupportedInterfaceLanguage(value)) {
+      return false;
+    }
+
+    this.setLanguage(value);
+
+    return true;
+  }
+
+  private activateLanguage(language: InterfaceLanguage, persist: boolean): void {
+    this.currentLanguageSignal.set(language);
+    this.translate.use(language);
+
+    if (persist) {
+      this.storage.write(language);
+    }
+  }
 }
-</file>
-
-<file path="src/app/core/README.md">
-# Core
-
-This folder contains application-level Angular code.
-
-Use this folder for:
-- global services
-- route guards
-- HTTP interceptors
-- authentication state
-- API error handling
-- CSRF handling
-- language headers for API requests
-
-Do not use this folder for:
-- page components
-- feature-specific UI
-- dictionary search UI
-- training UI
-- account page UI
-
-Rule:
-Code in `core` belongs to the whole application, not to one specific feature.
 </file>
 
 <file path="src/app/features/account/README.md">
@@ -568,6 +765,38 @@ Do not use this folder for:
 Rule:
 Auth feature UI belongs here.
 Application-wide authentication state and infrastructure belong to `core`.
+</file>
+
+<file path="src/app/features/dictionary/models/dictionary-language-pair.ts">
+export const SUPPORTED_DICTIONARY_LANGUAGE_PAIRS = [
+  'de-en',
+  'en-de',
+  'de-uk',
+  'uk-de',
+  'de-ru',
+  'ru-de',
+  'de-pl',
+  'pl-de',
+  'de-hu',
+  'hu-de',
+] as const;
+
+export type DictionaryLanguagePair =
+  (typeof SUPPORTED_DICTIONARY_LANGUAGE_PAIRS)[number];
+
+export const DEFAULT_DICTIONARY_LANGUAGE_PAIR: DictionaryLanguagePair = 'de-uk';
+
+export const DICTIONARY_LANGUAGE_PAIR_STORAGE_KEY =
+  'deutschlabor.defaultDictionaryPair';
+
+export function isSupportedDictionaryLanguagePair(
+  value: string | null | undefined,
+): value is DictionaryLanguagePair {
+  return (
+    typeof value === 'string' &&
+    (SUPPORTED_DICTIONARY_LANGUAGE_PAIRS as readonly string[]).includes(value)
+  );
+}
 </file>
 
 <file path="src/app/features/dictionary/README.md">
@@ -651,10 +880,6 @@ Do not use this folder for:
 
 Rule:
 Training feature code belongs here when it is directly related to reviewing, practicing, grading, or repeating searched words.
-</file>
-
-<file path="src/app/layout/header/header.css">
-
 </file>
 
 <file path="src/app/layout/header/header.spec.ts">
@@ -1015,12 +1240,327 @@ export const reqHandler = createNodeRequestHandler(app);
 }
 </file>
 
+<file path="src/app/app.routes.server.ts">
+import { RenderMode, ServerRoute } from '@angular/ssr';
+
+export const serverRoutes: ServerRoute[] = [
+  {
+    path: '**',
+    renderMode: RenderMode.Server
+  }
+];
+</file>
+
+<file path="src/app/app.routes.ts">
+import { Routes } from '@angular/router';
+import { DEFAULT_INTERFACE_LANGUAGE } from './core/i18n/interface-language';
+import { interfaceLanguageUrlMatcher } from './core/i18n/interface-language-url.matcher';
+
+export const routes: Routes = [
+  {
+    path: '',
+    pathMatch: 'full',
+    redirectTo: DEFAULT_INTERFACE_LANGUAGE,
+  },
+  {
+    matcher: interfaceLanguageUrlMatcher,
+    children: [],
+  },
+  {
+    path: '**',
+    redirectTo: DEFAULT_INTERFACE_LANGUAGE,
+  },
+];
+</file>
+
+<file path="src/app/app.ts">
+import { Component, inject } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { InterfaceLanguageRouteService } from './core/i18n/interface-language-route.service';
+import { Header } from './layout/header/header';
+
+@Component({
+  selector: 'app-root',
+  imports: [RouterOutlet, Header],
+  templateUrl: './app.html',
+  styleUrl: './app.css'
+})
+export class App {
+  private readonly _interfaceLanguageRoute = inject(InterfaceLanguageRouteService);
+}
+</file>
+
+<file path="src/app/core/i18n/interface-language.ts">
+export const SUPPORTED_INTERFACE_LANGUAGES = [
+  'de',
+  'en',
+  'uk',
+  'ru', 
+  'pl',
+  'hu',
+] as const;
+
+export type InterfaceLanguage = (typeof SUPPORTED_INTERFACE_LANGUAGES)[number];
+
+export const DEFAULT_INTERFACE_LANGUAGE: InterfaceLanguage = 'de';
+
+export const INTERFACE_LANGUAGE_STORAGE_KEY = 'deutschlabor.interfaceLanguage'; 
+
+export function isSupportedInterfaceLanguage(
+  value: string | null | undefined,
+): value is InterfaceLanguage {
+  return (
+    typeof value === 'string' &&
+    (SUPPORTED_INTERFACE_LANGUAGES as readonly string[]).includes(value)
+  );
+}
+</file>
+
+<file path="src/app/core/README.md">
+# Core
+
+This folder contains application-level Angular code.
+
+Use this folder for:
+- global services
+- route guards
+- HTTP interceptors
+- authentication state
+- API error handling
+- CSRF handling
+- language headers for API requests
+
+Do not use this folder for:
+- page components
+- feature-specific UI
+- dictionary search UI
+- training UI
+- account page UI
+
+Rule:
+Code in `core` belongs to the whole application, not to one specific feature.
+
+## Interface language / i18n
+
+DeutschLabor uses `ngx-translate` for frontend interface translations.
+
+The frontend interface language is runtime-switchable and is controlled by the URL locale prefix.
+
+Supported interface languages:
+
+- `de` — German, default and fallback language
+- `en` — English
+- `uk` — Ukrainian
+- `ru` — Russian
+- `pl` — Polish
+- `hu` — Hungarian
+
+URL structure:
+
+```txt
+/de
+/en
+/uk
+/ru
+/pl
+/hu
+
+```
+## The interface language is handled in:
+
+src/app/core/i18n/interface-language.ts
+src/app/core/i18n/interface-language-storage.service.ts
+src/app/core/i18n/interface-language.service.ts
+src/app/core/i18n/interface-language-route.service.ts
+src/app/core/i18n/interface-language-url.matcher.ts
+src/app/core/i18n/accept-language.interceptor.ts
+
+## Translation files are stored in:
+
+public/i18n/de.json
+public/i18n/en.json
+public/i18n/uk.json
+public/i18n/ru.json
+public/i18n/pl.json
+public/i18n/hu.json
+
+# Rules:
+- The URL locale prefix is the main source of the active interface language.
+- The header language switcher changes the URL, not only the in-memory language state.
+- InterfaceLanguageService controls ngx-translate.
+- InterfaceLanguageStorageService hides browser localStorage behind an SSR-safe service.
+- AcceptLanguageInterceptor adds the current interface language to backend API requests via Accept-Language.
+- Interface language and dictionary language pair are separate concepts.
+
+# Example:
+
+- interfaceLanguage = uk
+- defaultDictionaryPair = de-uk
+
+This means: the UI is Ukrainian, but the dictionary pair is German ↔ Ukrainian.
+
+# Dictionary language pair configuration belongs to the dictionary feature, not to core/i18n:
+- src/app/features/dictionary/models/dictionary-language-pair.ts
+
+---
+</file>
+
+<file path="src/app/layout/header/header.css">
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  min-height: 4.5rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #111827;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  background: #111827;
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.brand-copy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.brand-name {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.brand-slogan {
+  margin-top: 0.2rem;
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.main-nav a,
+.auth-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  color: #374151;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.main-nav a:hover,
+.auth-links a:hover,
+.main-nav a.is-active {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #111827;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.language-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.language-switcher button {
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 0.4rem 0.55rem;
+  background: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.language-switcher button:hover,
+.language-switcher button.is-active {
+  border-color: #111827;
+  background: #111827;
+  color: #ffffff;
+}
+
+.auth-links {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.auth-links .auth-primary {
+  background: #111827;
+  color: #ffffff;
+}
+
+.auth-links .auth-primary:hover {
+  background: #1f2937;
+  color: #ffffff;
+}
+
+@media (max-width: 900px) {
+  .app-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .main-nav,
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+</file>
+
 <file path="src/app/app.config.ts">
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors, } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
+import { acceptLanguageInterceptor } from './core/i18n/accept-language.interceptor';
 
 import { routes } from './app.routes';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
@@ -1031,7 +1571,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideClientHydration(withEventReplay()),
-    provideHttpClient(),
+    provideHttpClient(withFetch(), withInterceptors([acceptLanguageInterceptor]),),
 
     provideTranslateService({
       loader: provideTranslateHttpLoader({
@@ -1045,32 +1585,115 @@ export const appConfig: ApplicationConfig = {
 };
 </file>
 
-<file path="src/app/app.routes.server.ts">
-import { RenderMode, ServerRoute } from '@angular/ssr';
-
-export const serverRoutes: ServerRoute[] = [
-  {
-    path: '**',
-    renderMode: RenderMode.Server
-  }
-];
-</file>
-
 <file path="src/app/layout/header/header.html">
-<p>{{ 'header.brand' | translate }} — {{ 'header.language' | translate }}</p>
+<div class="app-header">
+  <a class="brand" [routerLink]="localizedPath('')" aria-label="DeutschLabor">
+    <span class="brand-mark">DL</span>
+
+    <span class="brand-copy">
+      <span class="brand-name">{{ 'header.brand' | translate }}</span>
+      <span class="brand-slogan">{{ 'header.slogan' | translate }}</span>
+    </span>
+  </a>
+
+  <nav class="main-nav" [attr.aria-label]="'header.mainNavigation' | translate">
+    <a
+      [routerLink]="localizedPath('')"
+      routerLinkActive="is-active"
+      [routerLinkActiveOptions]="{ exact: true }"
+    >
+      {{ 'nav.search' | translate }}
+    </a>
+
+    <a [routerLink]="localizedPath('training')" routerLinkActive="is-active">
+      {{ 'nav.training' | translate }}
+      <span class="nav-badge">0</span>
+    </a>
+
+    <a [routerLink]="localizedPath('account')" routerLinkActive="is-active">
+      {{ 'nav.account' | translate }}
+    </a>
+  </nav>
+
+  <div class="header-actions">
+    <div class="language-switcher" [attr.aria-label]="'header.language' | translate">
+      @for (language of supportedLanguages; track language) {
+        <button
+          type="button"
+          [class.is-active]="language === currentLanguage()"
+          [attr.aria-current]="language === currentLanguage() ? 'true' : null"
+          (click)="changeLanguage(language)"
+        >
+          {{ language.toUpperCase() }}
+        </button>
+      }
+    </div>
+
+    <div class="auth-links">
+      <a [routerLink]="localizedPath('login')">
+        {{ 'auth.login' | translate }}
+      </a>
+
+      <a class="auth-primary" [routerLink]="localizedPath('register')">
+        {{ 'auth.register' | translate }}
+      </a>
+    </div>
+  </div>
+</div>
 </file>
 
 <file path="src/app/layout/header/header.ts">
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+
+import { InterfaceLanguageService } from '../../core/i18n/interface-language.service';
+import { InterfaceLanguage } from '../../core/i18n/interface-language';
 
 @Component({
   selector: 'app-header',
-  imports: [TranslatePipe],
+  imports: [RouterLink, RouterLinkActive, TranslatePipe],
   templateUrl: './header.html',
   styleUrl: './header.css',
 })
-export class Header {}
+export class Header {
+  private readonly router = inject(Router);
+  private readonly interfaceLanguageService = inject(InterfaceLanguageService);
+
+  readonly supportedLanguages = this.interfaceLanguageService.supportedLanguages;
+  readonly currentLanguage = this.interfaceLanguageService.currentLanguage;
+
+  localizedPath(path: string): string[] {
+    const segments = path.split('/').filter(Boolean);
+
+    return ['/', this.currentLanguage(), ...segments];
+  }
+
+  changeLanguage(language: InterfaceLanguage): void {
+    const targetUrl = this.buildUrlWithLanguage(language);
+
+    void this.router.navigateByUrl(targetUrl);
+  }
+
+  private buildUrlWithLanguage(language: InterfaceLanguage): string {
+    const [pathAndQuery, fragment] = this.router.url.split('#');
+    const [path, query] = pathAndQuery.split('?');
+
+    const segments = path.split('/').filter(Boolean);
+
+    if (segments.length === 0) {
+      segments.push(language);
+    } else {
+      segments[0] = language;
+    }
+
+    const targetPath = `/${segments.join('/')}`;
+    const targetQuery = query ? `?${query}` : '';
+    const targetFragment = fragment ? `#${fragment}` : '';
+
+    return `${targetPath}${targetQuery}${targetFragment}`;
+  }
+}
 </file>
 
 </files>

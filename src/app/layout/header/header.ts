@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 
 import { InterfaceLanguageService } from '../../core/i18n/interface-language.service';
@@ -7,7 +7,7 @@ import { InterfaceLanguage } from '../../core/i18n/interface-language';
 
 @Component({
   selector: 'app-header',
-  imports: [TranslatePipe],
+  imports: [RouterLink, RouterLinkActive, TranslatePipe],
   templateUrl: './header.html',
   styleUrl: './header.css',
 })
@@ -17,6 +17,12 @@ export class Header {
 
   readonly supportedLanguages = this.interfaceLanguageService.supportedLanguages;
   readonly currentLanguage = this.interfaceLanguageService.currentLanguage;
+
+  localizedPath(path: string): string[] {
+    const segments = path.split('/').filter(Boolean);
+
+    return ['/', this.currentLanguage(), ...segments];
+  }
 
   changeLanguage(language: InterfaceLanguage): void {
     const targetUrl = this.buildUrlWithLanguage(language);

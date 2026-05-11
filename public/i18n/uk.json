@@ -4,6 +4,17 @@
   },
   "header": {
     "brand": "DeutschLabor",
-    "language": "Мова"
+    "slogan": "Вчити · Тренувати · Розуміти · Говорити",
+    "language": "Мова",
+    "mainNavigation": "Головна навігація"
+  },
+  "nav": {
+    "search": "Пошук",
+    "training": "Тренування",
+    "account": "Кабінет"
+  },
+  "auth": {
+    "login": "Вхід",
+    "register": "Реєстрація"
   }
 }

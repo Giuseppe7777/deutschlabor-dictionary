@@ -4,6 +4,17 @@
   },
   "header": {
     "brand": "DeutschLabor",
-    "language": "Nyelv"
+    "slogan": "Tanulni · Gyakorolni · Érteni · Beszélni",
+    "language": "Nyelv",
+    "mainNavigation": "Fő navigáció"
+  },
+  "nav": {
+    "search": "Keresés",
+    "training": "Gyakorlás",
+    "account": "Fiók"
+  },
+  "auth": {
+    "login": "Belépés",
+    "register": "Regisztráció"
   }
 }

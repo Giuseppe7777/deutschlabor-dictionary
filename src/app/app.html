@@ -1,7 +1,11 @@
-<header>
-  <app-header />
+<header class="app-shell-header">
+  <div class="app-container">
+    <app-header />
+  </div>
 </header>
 
-<main>
-  <router-outlet />
+<main class="app-shell-main">
+  <div class="app-container app-main-container">
+    <router-outlet />
+  </div>
 </main>

@@ -4,6 +4,17 @@
   },
   "header": {
     "brand": "DeutschLabor",
-    "language": "Language"
+    "slogan": "Learn · Practise · Understand · Speak",
+    "language": "Language",
+    "mainNavigation": "Main navigation"
+  },
+  "nav": {
+    "search": "Search",
+    "training": "Training",
+    "account": "Account"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Register"
   }
 }

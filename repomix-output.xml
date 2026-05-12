@@ -45,6 +45,7 @@ The content is organized as follows:
 .prettierrc
 angular.json
 package.json
+public/brand/dl-logo.png
 public/favicon.ico
 public/i18n/de.json
 public/i18n/en.json
@@ -260,144 +261,6 @@ Thumbs.db
 }
 </file>
 
-<file path="public/i18n/de.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Lernen · Üben · Verstehen · Sprechen",
-    "language": "Sprache",
-    "mainNavigation": "Hauptnavigation"
-  },
-  "nav": {
-    "search": "Suche",
-    "training": "Training",
-    "account": "Konto"
-  },
-  "auth": {
-    "login": "Anmelden",
-    "register": "Registrieren"
-  }
-}
-</file>
-
-<file path="public/i18n/en.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Learn · Practise · Understand · Speak",
-    "language": "Language",
-    "mainNavigation": "Main navigation"
-  },
-  "nav": {
-    "search": "Search",
-    "training": "Training",
-    "account": "Account"
-  },
-  "auth": {
-    "login": "Log in",
-    "register": "Register"
-  }
-}
-</file>
-
-<file path="public/i18n/hu.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Tanulni · Gyakorolni · Érteni · Beszélni",
-    "language": "Nyelv",
-    "mainNavigation": "Fő navigáció"
-  },
-  "nav": {
-    "search": "Keresés",
-    "training": "Gyakorlás",
-    "account": "Fiók"
-  },
-  "auth": {
-    "login": "Belépés",
-    "register": "Regisztráció"
-  }
-}
-</file>
-
-<file path="public/i18n/pl.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Uczyć się · Ćwiczyć · Rozumieć · Mówić",
-    "language": "Język",
-    "mainNavigation": "Główna nawigacja"
-  },
-  "nav": {
-    "search": "Szukaj",
-    "training": "Trening",
-    "account": "Konto"
-  },
-  "auth": {
-    "login": "Logowanie",
-    "register": "Rejestracja"
-  }
-}
-</file>
-
-<file path="public/i18n/ru.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Учить · Тренировать · Понимать · Говорить",
-    "language": "Язык",
-    "mainNavigation": "Главная навигация"
-  },
-  "nav": {
-    "search": "Поиск",
-    "training": "Тренировка",
-    "account": "Кабинет"
-  },
-  "auth": {
-    "login": "Вход",
-    "register": "Регистрация"
-  }
-}
-</file>
-
-<file path="public/i18n/uk.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Вчити · Тренувати · Розуміти · Говорити",
-    "language": "Мова",
-    "mainNavigation": "Головна навігація"
-  },
-  "nav": {
-    "search": "Пошук",
-    "training": "Тренування",
-    "account": "Кабінет"
-  },
-  "auth": {
-    "login": "Вхід",
-    "register": "Реєстрація"
-  }
-}
-</file>
-
 <file path="README.md">
 # DeutschlaborDictionary
 
@@ -473,40 +336,6 @@ const serverConfig: ApplicationConfig = {
 };
 
 export const config = mergeApplicationConfig(appConfig, serverConfig);
-</file>
-
-<file path="src/app/app.css">
-
-</file>
-
-<file path="src/app/app.html">
-<header>
-  <app-header />
-</header>
-
-<main>
-  <router-outlet />
-</main>
-</file>
-
-<file path="src/app/app.spec.ts">
-import { TestBed } from '@angular/core/testing';
-import { App } from './app';
-
-describe('App', () => {
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [App],
-    }).compileComponents();
-  });
-
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
-  });
-  
-});
 </file>
 
 <file path="src/app/core/i18n/accept-language.interceptor.ts">
@@ -1119,10 +948,6 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
 export const reqHandler = createNodeRequestHandler(app);
 </file>
 
-<file path="src/styles.css">
-/* You can add global styles to this file, and also import other style files */
-</file>
-
 <file path="tsconfig.app.json">
 /* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
 /* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
@@ -1197,47 +1022,188 @@ export const reqHandler = createNodeRequestHandler(app);
 }
 </file>
 
-<file path="package.json">
+<file path="public/i18n/de.json">
 {
-  "name": "deutschlabor-dictionary",
-  "version": "0.0.0",
-  "scripts": {
-    "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "serve:ssr:deutschlabor-dictionary": "node dist/deutschlabor-dictionary/server/server.mjs"
+  "app": {
+    "name": "DeutschLabor"
   },
-  "private": true,
-  "packageManager": "npm@11.6.3",
-  "dependencies": {
-    "@angular/common": "^21.2.0",
-    "@angular/compiler": "^21.2.0",
-    "@angular/core": "^21.2.0",
-    "@angular/forms": "^21.2.0",
-    "@angular/platform-browser": "^21.2.0",
-    "@angular/platform-server": "^21.2.0",
-    "@angular/router": "^21.2.0",
-    "@angular/ssr": "^21.2.10",
-    "@ngx-translate/core": "^17.0.0",
-    "@ngx-translate/http-loader": "^17.0.0",
-    "express": "^5.1.0",
-    "rxjs": "~7.8.0",
-    "tslib": "^2.3.0"
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Lernen · Üben · Verstehen · Sprechen",
+    "language": "Sprache",
+    "mainNavigation": "Hauptnavigation"
   },
-  "devDependencies": {
-    "@angular/build": "^21.2.10",
-    "@angular/cli": "^21.2.10",
-    "@angular/compiler-cli": "^21.2.0",
-    "@types/express": "^5.0.1",
-    "@types/node": "^20.17.19",
-    "jsdom": "^28.0.0",
-    "prettier": "^3.8.1",
-    "typescript": "~5.9.2",
-    "vitest": "^4.0.8"
+  "nav": {
+    "search": "Suche",
+    "training": "Training",
+    "account": "Konto"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "register": "Registrieren"
   }
 }
+</file>
+
+<file path="public/i18n/en.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Learn · Practise · Understand · Speak",
+    "language": "Language",
+    "mainNavigation": "Main navigation"
+  },
+  "nav": {
+    "search": "Search",
+    "training": "Training",
+    "account": "Account"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Register"
+  }
+}
+</file>
+
+<file path="public/i18n/hu.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Tanulni · Gyakorolni · Érteni · Beszélni",
+    "language": "Nyelv",
+    "mainNavigation": "Fő navigáció"
+  },
+  "nav": {
+    "search": "Keresés",
+    "training": "Gyakorlás",
+    "account": "Fiók"
+  },
+  "auth": {
+    "login": "Belépés",
+    "register": "Regisztráció"
+  }
+}
+</file>
+
+<file path="public/i18n/pl.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Uczyć się · Ćwiczyć · Rozumieć · Mówić",
+    "language": "Język",
+    "mainNavigation": "Główna nawigacja"
+  },
+  "nav": {
+    "search": "Szukaj",
+    "training": "Trening",
+    "account": "Konto"
+  },
+  "auth": {
+    "login": "Logowanie",
+    "register": "Rejestracja"
+  }
+}
+</file>
+
+<file path="public/i18n/ru.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Учить · Тренировать · Понимать · Говорить",
+    "language": "Язык",
+    "mainNavigation": "Главная навигация"
+  },
+  "nav": {
+    "search": "Поиск",
+    "training": "Тренировка",
+    "account": "Кабинет"
+  },
+  "auth": {
+    "login": "Вход",
+    "register": "Регистрация"
+  }
+}
+</file>
+
+<file path="public/i18n/uk.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Вчити · Тренувати · Розуміти · Говорити",
+    "language": "Мова",
+    "mainNavigation": "Головна навігація"
+  },
+  "nav": {
+    "search": "Пошук",
+    "training": "Тренування",
+    "account": "Кабінет"
+  },
+  "auth": {
+    "login": "Вхід",
+    "register": "Реєстрація"
+  }
+}
+</file>
+
+<file path="src/app/app.css">
+:host {
+  display: block;
+  min-height: 100dvh;
+  background: var(--app-color-page);
+  color: var(--app-color-text);
+}
+
+.app-shell-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--app-color-border);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+}
+
+.app-container {
+  width: min(100%, var(--app-container-max));
+  margin-inline: auto;
+  padding-inline: var(--app-container-padding);
+}
+
+.app-shell-main {
+  min-height: calc(100dvh - var(--app-header-height));
+}
+
+.app-main-container {
+  padding-block: clamp(1.5rem, 4vw, 3rem);
+}
+</file>
+
+<file path="src/app/app.html">
+<header class="app-shell-header">
+  <div class="app-container">
+    <app-header />
+  </div>
+</header>
+
+<main class="app-shell-main">
+  <div class="app-container app-main-container">
+    <router-outlet />
+  </div>
+</main>
 </file>
 
 <file path="src/app/app.routes.server.ts">
@@ -1273,21 +1239,24 @@ export const routes: Routes = [
 ];
 </file>
 
-<file path="src/app/app.ts">
-import { Component, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { InterfaceLanguageRouteService } from './core/i18n/interface-language-route.service';
-import { Header } from './layout/header/header';
+<file path="src/app/app.spec.ts">
+import { TestBed } from '@angular/core/testing';
+import { App } from './app';
 
-@Component({
-  selector: 'app-root',
-  imports: [RouterOutlet, Header],
-  templateUrl: './app.html',
-  styleUrl: './app.css'
-})
-export class App {
-  private readonly _interfaceLanguageRoute = inject(InterfaceLanguageRouteService);
-}
+describe('App', () => {
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [App],
+    }).compileComponents();
+  });
+
+  it('should create the app', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    expect(app).toBeTruthy();
+  });
+  
+});
 </file>
 
 <file path="src/app/core/i18n/interface-language.ts">
@@ -1405,151 +1374,129 @@ This means: the UI is Ukrainian, but the dictionary pair is German ↔ Ukrainian
 ---
 </file>
 
-<file path="src/app/layout/header/header.css">
-.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  min-height: 4.5rem;
-  padding: 0.75rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  background: #ffffff;
+<file path="src/styles.css">
+@import '@fontsource/roboto/latin-400.css';
+@import '@fontsource/roboto/latin-500.css';
+@import '@fontsource/roboto/latin-700.css';
+
+@import '@fontsource/roboto/latin-ext-400.css';
+@import '@fontsource/roboto/latin-ext-500.css';
+@import '@fontsource/roboto/latin-ext-700.css';
+
+@import '@fontsource/roboto/cyrillic-400.css';
+@import '@fontsource/roboto/cyrillic-500.css';
+@import '@fontsource/roboto/cyrillic-700.css';
+
+@import '@fontsource/roboto/cyrillic-ext-400.css';
+@import '@fontsource/roboto/cyrillic-ext-500.css';
+@import '@fontsource/roboto/cyrillic-ext-700.css';
+
+:root {
+  --app-container-max: 80rem;
+  --app-container-padding: clamp(1rem, 4vw, 2rem);
+  --app-header-height: 4.5rem;
+
+  --app-font-sans:
+    'Roboto',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+
+  --app-font-size-base: 1rem;
+  --app-line-height-base: 1.5;
+
+  --app-font-size-small: 0.875rem;
+  --app-font-size-ui: 0.95rem;
+  --app-font-size-body: 1.125rem;
+
+  --app-font-weight-regular: 400;
+  --app-font-weight-medium: 500;
+  --app-font-weight-bold: 700;
+
+  --app-color-page: #f9fafb;
+  --app-color-surface: #ffffff;
+  --app-color-border: #e5e7eb;
+  --app-color-text: #111827;
+  --app-color-text-muted: #6b7280;
 }
 
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: #111827;
-  text-decoration: none;
-  white-space: nowrap;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-.brand-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 999px;
-  background: #111827;
-  color: #ffffff;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+html {
+  min-width: 320px;
+  font-size: var(--app-font-size-base);
 }
 
-.brand-copy {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--app-color-page);
+  color: var(--app-color-text);
+  font-family: var(--app-font-sans);
+  font-weight: var(--app-font-weight-regular);
+  line-height: var(--app-line-height-base);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
-.brand-name {
-  font-weight: 700;
-  font-size: 1rem;
-}
-
-.brand-slogan {
-  margin-top: 0.2rem;
-  color: #6b7280;
-  font-size: 0.75rem;
-}
-
-.main-nav {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.main-nav a,
-.auth-links a {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  border-radius: 999px;
-  padding: 0.55rem 0.85rem;
-  color: #374151;
-  text-decoration: none;
-  font-size: 0.95rem;
-}
-
-.main-nav a:hover,
-.auth-links a:hover,
-.main-nav a.is-active {
-  background: #f3f4f6;
-  color: #111827;
-}
-
-.nav-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.25rem;
-  height: 1.25rem;
-  border-radius: 999px;
-  background: #f59e0b;
-  color: #111827;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.language-switcher {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.language-switcher button {
-  border: 1px solid #d1d5db;
-  border-radius: 999px;
-  padding: 0.4rem 0.55rem;
-  background: #ffffff;
-  color: #374151;
-  cursor: pointer;
+button,
+input,
+textarea,
+select {
   font: inherit;
-  font-size: 0.8rem;
 }
 
-.language-switcher button:hover,
-.language-switcher button.is-active {
-  border-color: #111827;
-  background: #111827;
-  color: #ffffff;
+a {
+  color: inherit;
 }
+</file>
 
-.auth-links {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.auth-links .auth-primary {
-  background: #111827;
-  color: #ffffff;
-}
-
-.auth-links .auth-primary:hover {
-  background: #1f2937;
-  color: #ffffff;
-}
-
-@media (max-width: 900px) {
-  .app-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .main-nav,
-  .header-actions {
-    width: 100%;
-    flex-wrap: wrap;
+<file path="package.json">
+{
+  "name": "deutschlabor-dictionary",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "serve:ssr:deutschlabor-dictionary": "node dist/deutschlabor-dictionary/server/server.mjs"
+  },
+  "private": true,
+  "packageManager": "npm@11.6.3",
+  "dependencies": {
+    "@angular/common": "^21.2.0",
+    "@angular/compiler": "^21.2.0",
+    "@angular/core": "^21.2.0",
+    "@angular/forms": "^21.2.0",
+    "@angular/platform-browser": "^21.2.0",
+    "@angular/platform-server": "^21.2.0",
+    "@angular/router": "^21.2.0",
+    "@angular/ssr": "^21.2.10",
+    "@fontsource/roboto": "^5.2.10",
+    "@ngx-translate/core": "^17.0.0",
+    "@ngx-translate/http-loader": "^17.0.0",
+    "express": "^5.1.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^21.2.10",
+    "@angular/cli": "^21.2.10",
+    "@angular/compiler-cli": "^21.2.0",
+    "@types/express": "^5.0.1",
+    "@types/node": "^20.17.19",
+    "jsdom": "^28.0.0",
+    "prettier": "^3.8.1",
+    "typescript": "~5.9.2",
+    "vitest": "^4.0.8"
   }
 }
 </file>
@@ -1585,14 +1532,223 @@ export const appConfig: ApplicationConfig = {
 };
 </file>
 
+<file path="src/app/app.ts">
+import { Component, inject } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { InterfaceLanguageRouteService } from './core/i18n/interface-language-route.service';
+import { Header } from './layout/header/header';
+
+@Component({
+  selector: 'app-root',
+  imports: [RouterOutlet, Header],
+  templateUrl: './app.html',
+  styleUrl: './app.css'
+})
+export class App {
+  private readonly _interfaceLanguageRoute = inject(InterfaceLanguageRouteService);
+}
+</file>
+
+<file path="src/app/layout/header/header.css">
+.app-header {
+  display: grid;
+  grid-template-columns: 18rem minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 1.5rem;
+  min-height: var(--app-header-height);
+  padding-block: 0.75rem;
+}
+
+.brand {
+  display: inline-flex;
+  width: 18rem;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  color: var(--app-color-text, #111827);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.brand-logo {
+  display: block;
+  width: clamp(12rem, 20vw, 17rem);
+  max-width: 100%;
+  height: auto;
+}
+
+.brand-slogan {
+  display: block;
+  padding-left: 5%;
+  color: #d8232a;
+  font-size: clamp(0.58rem, 0.78vw, 0.76rem);
+  font-weight: var(--app-font-weight-bold, 700);
+  line-height: 1;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.main-nav {
+  display: flex;
+  justify-self: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.main-nav a,
+.auth-links a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 1px solid #b6cefa;
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  color: #374151;
+  text-decoration: none;
+  font-size: var(--app-font-size-ui);
+  font-weight: var(--app-font-weight-medium);
+  text-align: center;
+}
+
+.main-nav a {
+  min-width: 5.25rem;
+}
+
+.auth-links a {
+  min-width: 7.5rem;
+}
+
+.main-nav a:hover,
+.auth-links a:hover,
+.main-nav a.is-active {
+  border-color: #dbe7fe;
+  background: #dbe7fe;
+  color: #111827;
+}
+
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #111827;
+  font-size: 0.75rem;
+  font-weight: var(--app-font-weight-bold);
+}
+
+.header-actions {
+  display: flex;
+  justify-self: end;
+  align-items: center;
+  gap: 1rem;
+}
+
+.language-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.language-switcher button {
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 0.4rem 0.55rem;
+  background: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-medium);
+}
+
+.language-switcher button:hover,
+.language-switcher button.is-active {
+  border-color: #111827;
+  background: #111827;
+  color: #ffffff;
+}
+
+.auth-links {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.auth-links .auth-primary {
+  background: #111827;
+  color: #ffffff;
+}
+
+.auth-links .auth-primary:hover {
+  background: #1f2937;
+  color: #ffffff;
+}
+
+@media (max-width: 900px) {
+  .app-header {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .brand {
+    width: min(18rem, 100%);
+  }
+
+  .main-nav,
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .main-nav,
+  .header-actions {
+    justify-self: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .brand {
+    max-width: 100%;
+  }
+
+  .brand-logo {
+    width: 13.5rem;
+  }
+
+  .brand-slogan {
+    padding-left: 0;
+    font-size: 0.62rem;
+    line-height: 1.15;
+    white-space: normal;
+  }
+
+  .main-nav a,
+  .auth-links a {
+    min-width: auto;
+  }
+}
+</file>
+
 <file path="src/app/layout/header/header.html">
 <div class="app-header">
   <a class="brand" [routerLink]="localizedPath('')" aria-label="DeutschLabor">
-    <span class="brand-mark">DL</span>
+    <img
+      class="brand-logo"
+      src="/brand/dl-logo.png"
+      alt="DeutschLabor"
+      width="2172"
+      height="724"
+    >
 
-    <span class="brand-copy">
-      <span class="brand-name">{{ 'header.brand' | translate }}</span>
-      <span class="brand-slogan">{{ 'header.slogan' | translate }}</span>
+    <span class="brand-slogan">
+      {{ 'header.slogan' | translate }}
     </span>
   </a>
 

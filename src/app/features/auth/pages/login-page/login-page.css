@@ -1,0 +1,29 @@
+.page-placeholder {
+  max-width: 48rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border: 1px solid var(--app-color-border);
+  border-radius: 1.5rem;
+  background: var(--app-color-surface);
+}
+
+.page-kicker {
+  margin: 0 0 0.75rem;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.page-placeholder h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05;
+}
+
+.page-placeholder p {
+  max-width: 38rem;
+  margin: 1rem 0 0;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-body);
+}

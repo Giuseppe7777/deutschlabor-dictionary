@@ -16,5 +16,32 @@
   "auth": {
     "login": "Belépés",
     "register": "Regisztráció"
+  },
+  "pages": {
+    "search": {
+      "kicker": "Szótár",
+      "title": "Szavak keresése és megértése",
+      "description": "Itt készül a DeutschLabor Dictionary fő keresőoldala."
+    },
+    "training": {
+      "kicker": "Gyakorlás",
+      "title": "Szavak célzott ismétlése",
+      "description": "Itt készül a gyakorlási terület a keresett és mentett szavakhoz."
+    },
+    "account": {
+      "kicker": "Fiók",
+      "title": "A személyes felületed",
+      "description": "Itt készül a profil, a nyelvi beállítások és a biztonsági rész."
+    },
+    "login": {
+      "kicker": "Belépés",
+      "title": "Belépés a DeutschLaborba",
+      "description": "Itt készül a passkey-alapú belépési oldal."
+    },
+    "register": {
+      "kicker": "Regisztráció",
+      "title": "DeutschLabor-fiók létrehozása",
+      "description": "Itt készül a passkey-regisztráció és az email-megerősítés."
+    }
   }
 }

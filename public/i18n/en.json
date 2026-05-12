@@ -16,5 +16,32 @@
   "auth": {
     "login": "Log in",
     "register": "Register"
+  },
+  "pages": {
+    "search": {
+      "kicker": "Dictionary",
+      "title": "Search and understand words",
+      "description": "This will become the main search page of the DeutschLabor Dictionary."
+    },
+    "training": {
+      "kicker": "Training",
+      "title": "Review words with focus",
+      "description": "This will become the training area for searched and saved words."
+    },
+    "account": {
+      "kicker": "Account",
+      "title": "Your personal area",
+      "description": "This will become the area for profile, language settings and security."
+    },
+    "login": {
+      "kicker": "Login",
+      "title": "Log in to DeutschLabor",
+      "description": "This will become the passkey login page."
+    },
+    "register": {
+      "kicker": "Registration",
+      "title": "Create a DeutschLabor account",
+      "description": "This will become the registration page with passkey and email verification."
+    }
   }
 }

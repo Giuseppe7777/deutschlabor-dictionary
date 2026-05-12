@@ -16,5 +16,32 @@
   "auth": {
     "login": "Logowanie",
     "register": "Rejestracja"
+  },
+  "pages": {
+    "search": {
+      "kicker": "Słownik",
+      "title": "Szukaj i rozumiej słowa",
+      "description": "Tutaj powstanie główna strona wyszukiwania DeutschLabor Dictionary."
+    },
+    "training": {
+      "kicker": "Trening",
+      "title": "Powtarzaj słowa świadomie",
+      "description": "Tutaj powstanie strefa treningu dla wyszukanych i zapisanych słów."
+    },
+    "account": {
+      "kicker": "Konto",
+      "title": "Twoja osobista strefa",
+      "description": "Tutaj powstanie profil, ustawienia języka i bezpieczeństwo."
+    },
+    "login": {
+      "kicker": "Logowanie",
+      "title": "Zaloguj się do DeutschLabor",
+      "description": "Tutaj powstanie strona logowania przez passkey."
+    },
+    "register": {
+      "kicker": "Rejestracja",
+      "title": "Utwórz konto DeutschLabor",
+      "description": "Tutaj powstanie rejestracja przez passkey i potwierdzenie email."
+    }
   }
 }

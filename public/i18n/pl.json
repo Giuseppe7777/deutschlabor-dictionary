@@ -41,7 +41,58 @@
     "register": {
       "kicker": "Rejestracja",
       "title": "Utwórz konto DeutschLabor",
-      "description": "Tutaj powstanie rejestracja przez passkey i potwierdzenie email."
+      "description": "Utwórz konto za pomocą emaila i passkey. W następnym kroku twoje urządzenie utworzy bezpieczny passkey.",
+      "form": {
+        "firstName": {
+          "label": "Imię",
+          "placeholder": "Twoje imię",
+          "error": "Podaj imię."
+        },
+        "lastName": {
+          "label": "Nazwisko",
+          "placeholder": "Twoje nazwisko",
+          "error": "Podaj nazwisko."
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Podaj prawidłowy adres email."
+        },
+        "submit": "Zarejestruj przez passkey",
+        "submitting": "Przygotowywanie rejestracji...",
+        "messages": {
+          "preparing": "Przygotowywanie rejestracji...",
+          "creatingPasskey": "Potwierdź utworzenie passkey w oknie przeglądarki lub na swoim urządzeniu.",
+          "finishing": "Kończenie rejestracji...",
+          "registered": "Konto zostało utworzone. Jesteś teraz zalogowany w DeutschLabor. Wysłaliśmy email do potwierdzenia adresu."
+        },
+        "errors": {
+          "invalidInput": "Sprawdź wprowadzone dane.",
+          "emailAlreadyRegistered": "Ten adres email jest już zarejestrowany.",
+          "forbiddenOrigin": "Ten origin nie jest dozwolony dla rejestracji.",
+          "registrationSessionNotFound": "Nie znaleziono sesji rejestracji. Rozpocznij rejestrację ponownie.",
+          "registrationSessionExpired": "Sesja rejestracji wygasła. Rozpocznij rejestrację ponownie.",
+          "passkeyUnsupported": "Ta przeglądarka lub to urządzenie nie obsługuje passkey.",
+          "passkeyCancelled": "Tworzenie passkey zostało anulowane.",
+          "passkeyInvalidState": "Passkey dla tego konta może już istnieć na tym urządzeniu.",
+          "passkeyCreationFailed": "Nie udało się utworzyć passkey.",
+          "finishFailed": "Nie udało się zakończyć rejestracji.",
+          "unknown": "Wystąpił nieznany błąd."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Co stanie się dalej?",
+        "text": "Po wysłaniu formularza przeglądarka poprosi twoje urządzenie o utworzenie passkey. Następnie rejestracja zostanie zakończona na serwerze."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Tworzenie konta z passkey",
+        "intro": "DeutschLabor nie używa hasła. Zamiast hasła twoje urządzenie utworzy passkey — bezpieczny klucz dostępu do konta.",
+        "browserDialog": "Po kliknięciu przycisku przeglądarka otworzy okno tworzenia passkey. Możesz potwierdzić działanie telefonem, Windows Hello, Face ID, Touch ID, PIN-em albo inną metodą obsługiwaną przez twoje urządzenie.",
+        "privacy": "DeutschLabor nie otrzymuje twojego odcisku palca, Face ID ani PIN-u. Te dane pozostają na twoim urządzeniu. Na serwerze przechowywany jest tylko klucz publiczny.",
+        "back": "Wstecz",
+        "createPasskey": "Utwórz passkey"
+      }
     }
   }
 }

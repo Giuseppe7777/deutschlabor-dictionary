@@ -41,7 +41,58 @@
     "register": {
       "kicker": "Реєстрація",
       "title": "Створити акаунт DeutschLabor",
-      "description": "Тут буде реєстрація через passkey і підтвердження email."
+      "description": "Створи акаунт за допомогою email і passkey. На наступному кроці твій пристрій створить безпечний passkey.",
+      "form": {
+        "firstName": {
+          "label": "Ім’я",
+          "placeholder": "Твоє ім’я",
+          "error": "Введи ім’я."
+        },
+        "lastName": {
+          "label": "Прізвище",
+          "placeholder": "Твоє прізвище",
+          "error": "Введи прізвище."
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Введи правильну email-адресу."
+        },
+        "submit": "Зареєструватися через passkey",
+        "submitting": "Підготовка реєстрації...",
+        "messages": {
+          "preparing": "Підготовка реєстрації...",
+          "creatingPasskey": "Підтвердь створення passkey у вікні браузера або на своєму пристрої.",
+          "finishing": "Завершення реєстрації...",
+          "registered": "Акаунт створено. Ти вже увійшов у DeutschLabor. Ми надіслали email для підтвердження адреси."
+        },
+        "errors": {
+          "invalidInput": "Перевір введені дані.",
+          "emailAlreadyRegistered": "Ця email-адреса вже зареєстрована.",
+          "forbiddenOrigin": "Цей origin не дозволений для реєстрації.",
+          "registrationSessionNotFound": "Сесію реєстрації не знайдено. Почни реєстрацію ще раз.",
+          "registrationSessionExpired": "Сесія реєстрації закінчилась. Почни реєстрацію ще раз.",
+          "passkeyUnsupported": "Цей браузер або пристрій не підтримує passkey.",
+          "passkeyCancelled": "Створення passkey було скасовано.",
+          "passkeyInvalidState": "Passkey для цього акаунта вже може існувати на цьому пристрої.",
+          "passkeyCreationFailed": "Не вдалося створити passkey.",
+          "finishFailed": "Не вдалося завершити реєстрацію.",
+          "unknown": "Сталася невідома помилка."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Що буде далі?",
+        "text": "Після відправлення форми браузер попросить твій пристрій створити passkey. Потім реєстрація буде завершена на сервері."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Створення акаунта з passkey",
+        "intro": "DeutschLabor не використовує пароль. Замість пароля твій пристрій створить passkey — безпечний ключ доступу для входу в акаунт.",
+        "browserDialog": "Після натискання кнопки браузер відкриє вікно створення passkey. Ти можеш підтвердити дію через телефон, Windows Hello, Face ID, Touch ID, PIN або інший спосіб, який підтримує твій пристрій.",
+        "privacy": "DeutschLabor не отримує твій відбиток пальця, Face ID або PIN. Ці дані залишаються на твоєму пристрої. На сервері зберігається тільки публічний ключ.",
+        "back": "Назад",
+        "createPasskey": "Створити passkey"
+      }
     }
   }
 }

@@ -41,7 +41,58 @@
     "register": {
       "kicker": "Registrierung",
       "title": "DeutschLabor-Konto erstellen",
-      "description": "Hier entsteht die Registrierung mit Passkey und E-Mail-Bestätigung."
+      "description": "Erstelle dein Konto mit E-Mail und Passkey. Im nächsten Schritt wird dein Gerät einen sicheren Passkey erstellen.",
+      "form": {
+        "firstName": {
+          "label": "Vorname",
+          "placeholder": "Dein Vorname",
+          "error": "Bitte gib deinen Vornamen ein."
+        },
+        "lastName": {
+          "label": "Nachname",
+          "placeholder": "Dein Nachname",
+          "error": "Bitte gib deinen Nachnamen ein."
+        },
+        "email": {
+          "label": "E-Mail",
+          "placeholder": "name@example.com",
+          "error": "Bitte gib eine gültige E-Mail-Adresse ein."
+        },
+        "submit": "Mit Passkey registrieren",
+        "submitting": "Registrierung wird vorbereitet...",
+        "messages": {
+          "preparing": "Registrierung wird vorbereitet...",
+          "creatingPasskey": "Bestätige die Erstellung des Passkeys im Browserfenster oder auf deinem Gerät.",
+          "finishing": "Registrierung wird abgeschlossen...",
+          "registered": "Das Konto wurde erstellt. Du bist jetzt bei DeutschLabor angemeldet. Wir haben dir eine E-Mail zur Bestätigung deiner Adresse gesendet."
+        },
+        "errors": {
+          "invalidInput": "Bitte überprüfe deine Eingaben.",
+          "emailAlreadyRegistered": "Diese E-Mail-Adresse ist bereits registriert.",
+          "forbiddenOrigin": "Dieser Origin ist für die Registrierung nicht erlaubt.",
+          "registrationSessionNotFound": "Die Registrierungssitzung wurde nicht gefunden. Starte die Registrierung erneut.",
+          "registrationSessionExpired": "Die Registrierungssitzung ist abgelaufen. Starte die Registrierung erneut.",
+          "passkeyUnsupported": "Dieser Browser oder dieses Gerät unterstützt keine Passkeys.",
+          "passkeyCancelled": "Die Passkey-Erstellung wurde abgebrochen.",
+          "passkeyInvalidState": "Für dieses Konto könnte auf diesem Gerät bereits ein Passkey existieren.",
+          "passkeyCreationFailed": "Der Passkey konnte nicht erstellt werden.",
+          "finishFailed": "Die Registrierung konnte nicht abgeschlossen werden.",
+          "unknown": "Ein unbekannter Fehler ist aufgetreten."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Was passiert als Nächstes?",
+        "text": "Nach dem Absenden fordert der Browser dein Gerät auf, einen Passkey zu erstellen. Danach wird die Registrierung am Server abgeschlossen."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Konto mit Passkey erstellen",
+        "intro": "DeutschLabor verwendet kein Passwort. Stattdessen erstellt dein Gerät einen Passkey — einen sicheren Zugangsschlüssel für dein Konto.",
+        "browserDialog": "Nach dem Klick auf die Schaltfläche öffnet der Browser ein Fenster zur Passkey-Erstellung. Du kannst die Aktion mit deinem Smartphone, Windows Hello, Face ID, Touch ID, PIN oder einer anderen Methode bestätigen, die dein Gerät unterstützt.",
+        "privacy": "DeutschLabor erhält weder deinen Fingerabdruck noch Face ID oder PIN. Diese Daten bleiben auf deinem Gerät. Auf dem Server wird nur der öffentliche Schlüssel gespeichert.",
+        "back": "Zurück",
+        "createPasskey": "Passkey erstellen"
+      }
     }
   }
 }

@@ -41,7 +41,58 @@
     "register": {
       "kicker": "Regisztráció",
       "title": "DeutschLabor-fiók létrehozása",
-      "description": "Itt készül a passkey-regisztráció és az email-megerősítés."
+      "description": "Hozz létre fiókot emaillel és passkey segítségével. A következő lépésben az eszközöd létrehoz egy biztonságos passkey-t.",
+      "form": {
+        "firstName": {
+          "label": "Keresztnév",
+          "placeholder": "A keresztneved",
+          "error": "Add meg a keresztneved."
+        },
+        "lastName": {
+          "label": "Vezetéknév",
+          "placeholder": "A vezetékneved",
+          "error": "Add meg a vezetékneved."
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Adj meg egy érvényes email-címet."
+        },
+        "submit": "Regisztráció passkey-vel",
+        "submitting": "Regisztráció előkészítése...",
+        "messages": {
+          "preparing": "Regisztráció előkészítése...",
+          "creatingPasskey": "Erősítsd meg a passkey létrehozását a böngészőablakban vagy az eszközödön.",
+          "finishing": "Regisztráció befejezése...",
+          "registered": "A fiók létrejött. Most már be vagy jelentkezve a DeutschLaborba. Küldtünk egy emailt a címed megerősítéséhez."
+        },
+        "errors": {
+          "invalidInput": "Ellenőrizd a megadott adatokat.",
+          "emailAlreadyRegistered": "Ez az email-cím már regisztrálva van.",
+          "forbiddenOrigin": "Ez az origin nem engedélyezett a regisztrációhoz.",
+          "registrationSessionNotFound": "A regisztrációs munkamenet nem található. Indítsd újra a regisztrációt.",
+          "registrationSessionExpired": "A regisztrációs munkamenet lejárt. Indítsd újra a regisztrációt.",
+          "passkeyUnsupported": "Ez a böngésző vagy eszköz nem támogatja a passkey-t.",
+          "passkeyCancelled": "A passkey létrehozása meg lett szakítva.",
+          "passkeyInvalidState": "Ehhez a fiókhoz már létezhet passkey ezen az eszközön.",
+          "passkeyCreationFailed": "Nem sikerült létrehozni a passkey-t.",
+          "finishFailed": "Nem sikerült befejezni a regisztrációt.",
+          "unknown": "Ismeretlen hiba történt."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Mi történik ezután?",
+        "text": "Az űrlap elküldése után a böngésző megkéri az eszközödet, hogy hozzon létre egy passkey-t. Ezután a regisztráció a szerveren fejeződik be."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Fiók létrehozása passkey-vel",
+        "intro": "A DeutschLabor nem használ jelszót. Ehelyett az eszközöd létrehoz egy passkey-t — egy biztonságos hozzáférési kulcsot a fiókodhoz.",
+        "browserDialog": "A gombra kattintás után a böngésző megnyitja a passkey létrehozására szolgáló ablakot. A műveletet telefonnal, Windows Hello-val, Face ID-val, Touch ID-val, PIN-kóddal vagy az eszközöd által támogatott más módszerrel erősítheted meg.",
+        "privacy": "A DeutschLabor nem kapja meg az ujjlenyomatodat, Face ID-dat vagy PIN-kódodat. Ezek az adatok az eszközödön maradnak. A szerveren csak a nyilvános kulcs kerül tárolásra.",
+        "back": "Vissza",
+        "createPasskey": "Passkey létrehozása"
+      }
     }
   }
 }

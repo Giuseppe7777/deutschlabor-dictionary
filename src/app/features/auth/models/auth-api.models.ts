@@ -6,9 +6,37 @@ export interface RegisterStartRequest {
   email: string;
 }
 
+export type PublicKeyCredentialDescriptorFromServer = Omit<
+  PublicKeyCredentialDescriptor,
+  'id'
+> & {
+  id: string;
+};
+
+export type PublicKeyCredentialUserEntityFromServer = Omit<
+  PublicKeyCredentialUserEntity,
+  'id'
+> & {
+  id: string;
+};
+
+export type PublicKeyCredentialCreationOptionsFromServer = Omit<
+  PublicKeyCredentialCreationOptions,
+  'challenge' | 'user' | 'excludeCredentials'
+> & {
+  challenge: string;
+  user: PublicKeyCredentialUserEntityFromServer;
+  excludeCredentials?: PublicKeyCredentialDescriptorFromServer[];
+};
+
 export interface RegisterStartResponse {
-  publicKey: PublicKeyCredentialCreationOptions;
+  publicKey: PublicKeyCredentialCreationOptionsFromServer;
   expiresAt: string;
+}
+
+export interface RegisterFinishRequest {
+  email: string;
+  credential: unknown;
 }
 
 export interface RegisterFinishRequest {

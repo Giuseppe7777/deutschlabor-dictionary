@@ -1,5 +1,197 @@
-<section class="page-placeholder">
-  <p class="page-kicker">{{ 'pages.register.kicker' | translate }}</p>
-  <h1>{{ 'pages.register.title' | translate }}</h1>
-  <p>{{ 'pages.register.description' | translate }}</p>
+<section class="register-page">
+  <div class="register-card">
+    <p class="page-kicker">{{ 'pages.register.kicker' | translate }}</p>
+
+    <h1>{{ 'pages.register.title' | translate }}</h1>
+
+    <p class="register-description">
+      {{ 'pages.register.description' | translate }}
+    </p>
+
+    <form
+      class="register-form"
+      [formGroup]="registerForm"
+      (ngSubmit)="onSubmit()"
+      novalidate
+    >
+      <div class="form-field">
+        <label for="firstName">
+          {{ 'pages.register.form.firstName.label' | translate }}
+        </label>
+
+        <input
+          id="firstName"
+          type="text"
+          formControlName="firstName"
+          autocomplete="given-name"
+          [placeholder]="
+            'pages.register.form.firstName.placeholder' | translate
+          "
+          [class.is-invalid]="isInvalid('firstName')"
+        />
+
+        @if (isInvalid('firstName')) {
+          <p class="form-error">
+            {{ 'pages.register.form.firstName.error' | translate }}
+          </p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="lastName">
+          {{ 'pages.register.form.lastName.label' | translate }}
+        </label>
+
+        <input
+          id="lastName"
+          type="text"
+          formControlName="lastName"
+          autocomplete="family-name"
+          [placeholder]="
+            'pages.register.form.lastName.placeholder' | translate
+          "
+          [class.is-invalid]="isInvalid('lastName')"
+        />
+
+        @if (isInvalid('lastName')) {
+          <p class="form-error">
+            {{ 'pages.register.form.lastName.error' | translate }}
+          </p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="email">
+          {{ 'pages.register.form.email.label' | translate }}
+        </label>
+
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          autocomplete="email"
+          [placeholder]="'pages.register.form.email.placeholder' | translate"
+          [class.is-invalid]="isInvalid('email')"
+        />
+
+        @if (isInvalid('email')) {
+          <p class="form-error">
+            {{ 'pages.register.form.email.error' | translate }}
+          </p>
+        }
+      </div>
+
+      <button class="register-submit" type="submit" [disabled]="isSubmitting()">
+        @if (isSubmitting()) {
+          {{ 'pages.register.form.submitting' | translate }}
+        } @else {
+          {{ 'pages.register.form.submit' | translate }}
+        }
+      </button>
+
+      @switch (registrationStatus()) {
+        @case ('preparing') {
+          <p class="form-info">
+            {{ 'pages.register.form.messages.preparing' | translate }}
+          </p>
+        }
+
+        @case ('creatingPasskey') {
+          <p class="form-info">
+            {{ 'pages.register.form.messages.creatingPasskey' | translate }}
+          </p>
+        }
+
+        @case ('finishing') {
+          <p class="form-info">
+            {{ 'pages.register.form.messages.finishing' | translate }}
+          </p>
+        }
+
+        @case ('registered') {
+          <p class="form-success">
+            {{ 'pages.register.form.messages.registered' | translate }}
+          </p>
+        }
+      }
+
+      @if (submitError(); as errorKey) {
+        <p class="form-error form-submit-error">
+          {{ errorKey | translate }}
+        </p>
+      }
+    </form>
+  </div>
+
+  <aside class="register-info">
+    <h2>{{ 'pages.register.passkeyInfo.title' | translate }}</h2>
+    <p>{{ 'pages.register.passkeyInfo.text' | translate }}</p>
+  </aside>
+
+  @if (isPasskeyExplanationOpen()) {
+    <div class="passkey-modal-backdrop" role="presentation">
+      <section
+        class="passkey-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="passkeyModalTitle"
+      >
+        <p class="page-kicker">
+          {{ 'pages.register.passkeyModal.kicker' | translate }}
+        </p>
+
+        <h2 id="passkeyModalTitle">
+          {{ 'pages.register.passkeyModal.title' | translate }}
+        </h2>
+
+        <p class="passkey-modal-email">
+          {{ pendingRegistrationEmail() }}
+        </p>
+
+        <div class="passkey-modal-content">
+          <p>
+            {{ 'pages.register.passkeyModal.intro' | translate }}
+          </p>
+
+          <p>
+            {{ 'pages.register.passkeyModal.browserDialog' | translate }}
+          </p>
+
+          <p>
+            {{ 'pages.register.passkeyModal.privacy' | translate }}
+          </p>
+        </div>
+
+        @if (registrationStatus() === 'registered') {
+          <p class="form-success">
+            {{ 'pages.register.form.messages.registered' | translate }}
+          </p>
+        }
+
+        <div class="passkey-modal-actions">
+          <button
+            class="passkey-modal-secondary"
+            type="button"
+            [disabled]="isSubmitting()"
+            (click)="closePasskeyExplanation()"
+          >
+            {{ 'pages.register.passkeyModal.back' | translate }}
+          </button>
+
+          <button
+            class="passkey-modal-primary"
+            type="button"
+            [disabled]="isSubmitting()"
+            (click)="continueRegistrationWithPasskey()"
+          >
+            @if (isSubmitting()) {
+              {{ 'pages.register.form.submitting' | translate }}
+            } @else {
+              {{ 'pages.register.passkeyModal.createPasskey' | translate }}
+            }
+          </button>
+        </div>
+      </section>
+    </div>
+  }
 </section>

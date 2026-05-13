@@ -8,8 +8,8 @@ import {
 import { TranslatePipe } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 
-import { RegisterFinishResponse } from '../../models/auth-api.models';
 import { AuthApiService } from '../../services/auth-api.service';
+import { AuthStateService } from '../../services/auth-state.service';
 import {
   normalizeRegistrationPublicKeyOptions,
   serializeRegistrationCredential,
@@ -33,12 +33,20 @@ type RegistrationStatus =
 export class RegisterPage {
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly authApi = inject(AuthApiService);
+  private readonly authState = inject(AuthStateService);
 
   readonly isSubmitting = signal(false);
   readonly isPasskeyExplanationOpen = signal(false);
   readonly registrationStatus = signal<RegistrationStatus>('idle');
-  readonly registerFinishResponse = signal<RegisterFinishResponse | null>(null);
   readonly submitError = signal<string | null>(null);
+
+  readonly isRegistered = computed(
+    () => this.registrationStatus() === 'registered',
+  );
+
+  readonly isFormLocked = computed(
+    () => this.isSubmitting() || this.isRegistered(),
+  );
 
   readonly pendingRegistrationEmail = computed(() =>
     this.registerForm.controls.email.value.trim(),
@@ -68,10 +76,9 @@ export class RegisterPage {
   onSubmit(): void {
     this.registerForm.markAllAsTouched();
     this.submitError.set(null);
-    this.registerFinishResponse.set(null);
     this.registrationStatus.set('idle');
 
-    if (this.registerForm.invalid || this.isSubmitting()) {
+    if (this.registerForm.invalid || this.isFormLocked()) {
       return;
     }
 
@@ -88,10 +95,9 @@ export class RegisterPage {
 
   async continueRegistrationWithPasskey(): Promise<void> {
     this.submitError.set(null);
-    this.registerFinishResponse.set(null);
     this.registrationStatus.set('idle');
 
-    if (this.registerForm.invalid || this.isSubmitting()) {
+    if (this.registerForm.invalid || this.isFormLocked()) {
       return;
     }
 
@@ -123,14 +129,14 @@ export class RegisterPage {
 
       this.registrationStatus.set('finishing');
 
-      const registerFinishResponse = await firstValueFrom(
+      await firstValueFrom(
         this.authApi.registerFinish({
           email: payload.email,
           credential: serializedCredential,
         }),
       );
 
-      this.registerFinishResponse.set(registerFinishResponse);
+      this.authState.loadCurrentUser();
       this.registrationStatus.set('registered');
       this.isPasskeyExplanationOpen.set(false);
     } catch (error) {

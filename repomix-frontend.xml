@@ -86,6 +86,7 @@ src/app/features/auth/pages/register-page/register-page.ts
 src/app/features/auth/README.md
 src/app/features/auth/services/auth-api.service.ts
 src/app/features/auth/services/auth-state.service.ts
+src/app/features/auth/utils/webauthn-registration.ts
 src/app/features/dictionary/models/dictionary-language-pair.ts
 src/app/features/dictionary/pages/search-page/search-page.css
 src/app/features/dictionary/pages/search-page/search-page.html
@@ -576,74 +577,6 @@ Account feature UI belongs here.
 Application-wide user/session state belongs to `core`.
 </file>
 
-<file path="src/app/features/auth/models/auth-api.models.ts">
-import { CurrentUser } from './current-user';
-
-export interface RegisterStartRequest {
-  firstName: string;
-  lastName: string;
-  email: string;
-}
-
-export interface RegisterStartResponse {
-  publicKey: PublicKeyCredentialCreationOptions;
-  expiresAt: string;
-}
-
-export interface RegisterFinishRequest {
-  email: string;
-  credential: unknown;
-}
-
-export interface EmailVerificationStatus {
-  required: boolean;
-  emailSent: boolean;
-  emailVerified: boolean;
-}
-
-export interface RegisterFinishResponse extends CurrentUser {
-  emailVerification: EmailVerificationStatus;
-}
-
-export interface LoginStartRequest {
-  email: string;
-}
-
-export interface LoginStartResponse {
-  publicKey: PublicKeyCredentialRequestOptions;
-  expiresAt: string;
-}
-
-export interface LoginFinishRequest {
-  email: string;
-  credential: unknown;
-}
-
-export type LoginFinishResponse = CurrentUser;
-
-export interface LogoutResponse {
-  status: 'ok';
-  message: string;
-}
-
-export interface ResendVerificationEmailResponse {
-  status: 'ok';
-  message: string;
-  emailVerification: EmailVerificationStatus;
-}
-
-export interface VerifyEmailRequest {
-  token: string;
-}
-
-export interface VerifyEmailResponse {
-  status: 'ok' | 'error';
-  message: string;
-  messageKey?: string;
-  emailVerification?: EmailVerificationStatus;
-}
-</file>
-
 <file path="src/app/features/auth/models/auth-state.models.ts">
 import { CurrentUser } from './current-user';
 
@@ -754,59 +687,6 @@ import { TranslatePipe } from '@ngx-translate/core';
   styleUrl: './login-page.css',
 })
 export class LoginPage {}
-</file>
-
-<file path="src/app/features/auth/pages/register-page/register-page.css">
-.page-placeholder {
-  max-width: 48rem;
-  padding: clamp(1.5rem, 4vw, 3rem);
-  border: 1px solid var(--app-color-border);
-  border-radius: 1.5rem;
-  background: var(--app-color-surface);
-}
-
-.page-kicker {
-  margin: 0 0 0.75rem;
-  color: var(--app-color-text-muted);
-  font-size: var(--app-font-size-small);
-  font-weight: var(--app-font-weight-bold);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.page-placeholder h1 {
-  margin: 0;
-  font-size: clamp(2rem, 4vw, 3rem);
-  line-height: 1.05;
-}
-
-.page-placeholder p {
-  max-width: 38rem;
-  margin: 1rem 0 0;
-  color: var(--app-color-text-muted);
-  font-size: var(--app-font-size-body);
-}
-</file>
-
-<file path="src/app/features/auth/pages/register-page/register-page.html">
-<section class="page-placeholder">
-  <p class="page-kicker">{{ 'pages.register.kicker' | translate }}</p>
-  <h1>{{ 'pages.register.title' | translate }}</h1>
-  <p>{{ 'pages.register.description' | translate }}</p>
-</section>
-</file>
-
-<file path="src/app/features/auth/pages/register-page/register-page.ts">
-import { Component } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
-
-@Component({
-  selector: 'app-register-page',
-  imports: [TranslatePipe],
-  templateUrl: './register-page.html',
-  styleUrl: './register-page.css',
-})
-export class RegisterPage {}
 </file>
 
 <file path="src/app/features/auth/README.md">
@@ -963,6 +843,136 @@ export class AuthStateService {
   clearAuthenticatedUser(): void {
     this.stateSignal.set(toAnonymousState());
   }
+}
+</file>
+
+<file path="src/app/features/auth/utils/webauthn-registration.ts">
+import { PublicKeyCredentialCreationOptionsFromServer } from '../models/auth-api.models';
+
+export interface SerializedRegistrationCredential {
+  id: string;
+  rawId: string;
+  type: string;
+  authenticatorAttachment?: string | null;
+  response: {
+    clientDataJSON: string;
+    attestationObject: string;
+    transports?: string[];
+  };
+  clientExtensionResults: AuthenticationExtensionsClientOutputs;
+}
+
+export function normalizeRegistrationPublicKeyOptions(
+  input: PublicKeyCredentialCreationOptionsFromServer,
+): PublicKeyCredentialCreationOptions {
+  const publicKey = structuredClone(input);
+
+  return {
+    ...publicKey,
+    challenge: base64UrlToArrayBuffer(publicKey.challenge),
+    user: {
+      ...publicKey.user,
+      id: base64UrlToArrayBuffer(publicKey.user.id),
+    },
+    excludeCredentials: publicKey.excludeCredentials?.map((credential) => ({
+      ...credential,
+      id: base64UrlToArrayBuffer(credential.id),
+    })),
+  };
+}
+
+export function serializeRegistrationCredential(
+  credential: Credential | null,
+): SerializedRegistrationCredential {
+  if (!isPublicKeyCredential(credential)) {
+    throw new Error('registration_credential_missing_or_invalid');
+  }
+
+  if (hasToJson(credential)) {
+    return credential.toJSON() as unknown as SerializedRegistrationCredential;
+  }
+
+  return serializeRegistrationCredentialManually(credential);
+}
+
+function serializeRegistrationCredentialManually(
+  credential: PublicKeyCredential,
+): SerializedRegistrationCredential {
+  const response = credential.response;
+
+  if (!isAuthenticatorAttestationResponse(response)) {
+    throw new Error('registration_attestation_response_missing_or_invalid');
+  }
+
+  return {
+    id: credential.id,
+    rawId: arrayBufferToBase64Url(credential.rawId),
+    type: credential.type,
+    authenticatorAttachment: credential.authenticatorAttachment,
+    response: {
+      clientDataJSON: arrayBufferToBase64Url(response.clientDataJSON),
+      attestationObject: arrayBufferToBase64Url(response.attestationObject),
+      transports: response.getTransports(),
+    },
+    clientExtensionResults: credential.getClientExtensionResults(),
+  };
+}
+
+function isPublicKeyCredential(
+  credential: Credential | null,
+): credential is PublicKeyCredential {
+  return (
+    typeof PublicKeyCredential !== 'undefined' &&
+    credential instanceof PublicKeyCredential
+  );
+}
+
+function isAuthenticatorAttestationResponse(
+  response: AuthenticatorResponse,
+): response is AuthenticatorAttestationResponse {
+  return (
+    typeof AuthenticatorAttestationResponse !== 'undefined' &&
+    response instanceof AuthenticatorAttestationResponse
+  );
+}
+
+function hasToJson(
+  credential: PublicKeyCredential,
+): credential is PublicKeyCredential & {
+  toJSON(): unknown;
+} {
+  return 'toJSON' in credential && typeof credential.toJSON === 'function';
+}
+
+function base64UrlToArrayBuffer(base64url: string): ArrayBuffer {
+  const padding = '='.repeat((4 - (base64url.length % 4)) % 4);
+  const base64 = (base64url + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+
+  const raw = atob(base64);
+  const buffer = new ArrayBuffer(raw.length);
+  const output = new Uint8Array(buffer);
+
+  for (let index = 0; index < raw.length; index += 1) {
+    output[index] = raw.charCodeAt(index);
+  }
+
+  return buffer;
+}
+
+function arrayBufferToBase64Url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
 }
 </file>
 
@@ -1777,6 +1787,752 @@ This means: the UI is Ukrainian, but the dictionary pair is German ↔ Ukrainian
 ---
 </file>
 
+<file path="src/app/features/auth/models/auth-api.models.ts">
+import { CurrentUser } from './current-user';
+
+export interface RegisterStartRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export type PublicKeyCredentialDescriptorFromServer = Omit<
+  PublicKeyCredentialDescriptor,
+  'id'
+> & {
+  id: string;
+};
+
+export type PublicKeyCredentialUserEntityFromServer = Omit<
+  PublicKeyCredentialUserEntity,
+  'id'
+> & {
+  id: string;
+};
+
+export type PublicKeyCredentialCreationOptionsFromServer = Omit<
+  PublicKeyCredentialCreationOptions,
+  'challenge' | 'user' | 'excludeCredentials'
+> & {
+  challenge: string;
+  user: PublicKeyCredentialUserEntityFromServer;
+  excludeCredentials?: PublicKeyCredentialDescriptorFromServer[];
+};
+
+export interface RegisterStartResponse {
+  publicKey: PublicKeyCredentialCreationOptionsFromServer;
+  expiresAt: string;
+}
+
+export interface RegisterFinishRequest {
+  email: string;
+  credential: unknown;
+}
+
+export interface RegisterFinishRequest {
+  email: string;
+  credential: unknown;
+}
+
+export interface EmailVerificationStatus {
+  required: boolean;
+  emailSent: boolean;
+  emailVerified: boolean;
+}
+
+export interface RegisterFinishResponse extends CurrentUser {
+  emailVerification: EmailVerificationStatus;
+}
+
+export interface LoginStartRequest {
+  email: string;
+}
+
+export interface LoginStartResponse {
+  publicKey: PublicKeyCredentialRequestOptions;
+  expiresAt: string;
+}
+
+export interface LoginFinishRequest {
+  email: string;
+  credential: unknown;
+}
+
+export type LoginFinishResponse = CurrentUser;
+
+export interface LogoutResponse {
+  status: 'ok';
+  message: string;
+}
+
+export interface ResendVerificationEmailResponse {
+  status: 'ok';
+  message: string;
+  emailVerification: EmailVerificationStatus;
+}
+
+export interface VerifyEmailRequest {
+  token: string;
+}
+
+export interface VerifyEmailResponse {
+  status: 'ok' | 'error';
+  message: string;
+  messageKey?: string;
+  emailVerification?: EmailVerificationStatus;
+}
+</file>
+
+<file path="src/app/features/auth/pages/register-page/register-page.css">
+.register-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+}
+
+.register-card,
+.register-info {
+  border: 1px solid var(--app-color-border);
+  border-radius: 1.5rem;
+  background: var(--app-color-surface);
+}
+
+.register-card {
+  max-width: 42rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+
+.register-info {
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.page-kicker {
+  margin: 0 0 0.75rem;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.register-card h1,
+.register-info h2 {
+  margin: 0;
+  color: var(--app-color-text);
+  line-height: 1.1;
+}
+
+.register-card h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.register-info h2 {
+  font-size: clamp(1.35rem, 2.5vw, 1.8rem);
+}
+
+.register-description,
+.register-info p {
+  margin: 1rem 0 0;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-body);
+}
+
+.register-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.form-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.form-field label {
+  color: var(--app-color-text);
+  font-size: var(--app-font-size-ui);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.form-field input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 0.9rem;
+  padding: 0.8rem 0.95rem;
+  background: #ffffff;
+  color: var(--app-color-text);
+  font-size: var(--app-font-size-ui);
+  outline: none;
+}
+
+.form-field input:focus {
+  border-color: #111827;
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.12);
+}
+
+.form-field input.is-invalid {
+  border-color: #dc2626;
+}
+
+.form-error {
+  margin: 0;
+  color: #dc2626;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-medium);
+}
+
+.register-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  min-width: 13rem;
+  border: 1px solid #111827;
+  border-radius: 999px;
+  padding: 0.85rem 1.25rem;
+  background: #111827;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: var(--app-font-size-ui);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.register-submit:hover {
+  background: #1f2937;
+}
+
+.register-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+@media (max-width: 850px) {
+  .register-page {
+    grid-template-columns: 1fr;
+  }
+
+  .register-card {
+    max-width: none;
+  }
+}
+
+.form-success {
+  margin: 0;
+  border: 1px solid #16a34a;
+  border-radius: 0.9rem;
+  padding: 0.8rem 0.95rem;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-medium);
+}
+
+.form-submit-error {
+  border: 1px solid #dc2626;
+  border-radius: 0.9rem;
+  padding: 0.8rem 0.95rem;
+  background: #fef2f2;
+}
+
+.form-info {
+  margin: 0;
+  border: 1px solid #2563eb;
+  border-radius: 0.9rem;
+  padding: 0.8rem 0.95rem;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-medium);
+}
+
+.passkey-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(17, 24, 39, 0.62);
+}
+
+.passkey-modal {
+  width: min(100%, 36rem);
+  border: 1px solid var(--app-color-border);
+  border-radius: 1.5rem;
+  padding: clamp(1.5rem, 4vw, 2rem);
+  background: #ffffff;
+  box-shadow: 0 24px 80px rgba(17, 24, 39, 0.24);
+}
+
+.passkey-modal h2 {
+  margin: 0;
+  color: var(--app-color-text);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  line-height: 1.1;
+}
+
+.passkey-modal-email {
+  display: inline-flex;
+  max-width: 100%;
+  margin: 1rem 0 0;
+  border: 1px solid #dbe7fe;
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.passkey-modal-content {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1.25rem;
+}
+
+.passkey-modal-content p {
+  margin: 0;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-body);
+  line-height: 1.55;
+}
+
+.passkey-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.passkey-modal-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.8rem 1.1rem;
+  cursor: pointer;
+  font-size: var(--app-font-size-ui);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.passkey-modal-primary {
+  border: 1px solid #111827;
+  background: #111827;
+  color: #ffffff;
+}
+
+.passkey-modal-secondary {
+  border: 1px solid #bfdbfe;
+  background: #ffffff;
+  color: #1e40af;
+}
+
+.passkey-modal-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+</file>
+
+<file path="src/app/features/auth/pages/register-page/register-page.html">
+<section class="register-page">
+  <div class="register-card">
+    <p class="page-kicker">{{ 'pages.register.kicker' | translate }}</p>
+
+    <h1>{{ 'pages.register.title' | translate }}</h1>
+
+    <p class="register-description">
+      {{ 'pages.register.description' | translate }}
+    </p>
+
+    <form
+      class="register-form"
+      [formGroup]="registerForm"
+      (ngSubmit)="onSubmit()"
+      novalidate
+    >
+      <div class="form-field">
+        <label for="firstName">
+          {{ 'pages.register.form.firstName.label' | translate }}
+        </label>
+
+        <input
+          id="firstName"
+          type="text"
+          formControlName="firstName"
+          autocomplete="given-name"
+          [placeholder]="
+            'pages.register.form.firstName.placeholder' | translate
+          "
+          [class.is-invalid]="isInvalid('firstName')"
+        />
+
+        @if (isInvalid('firstName')) {
+          <p class="form-error">
+            {{ 'pages.register.form.firstName.error' | translate }}
+          </p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="lastName">
+          {{ 'pages.register.form.lastName.label' | translate }}
+        </label>
+
+        <input
+          id="lastName"
+          type="text"
+          formControlName="lastName"
+          autocomplete="family-name"
+          [placeholder]="
+            'pages.register.form.lastName.placeholder' | translate
+          "
+          [class.is-invalid]="isInvalid('lastName')"
+        />
+
+        @if (isInvalid('lastName')) {
+          <p class="form-error">
+            {{ 'pages.register.form.lastName.error' | translate }}
+          </p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="email">
+          {{ 'pages.register.form.email.label' | translate }}
+        </label>
+
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          autocomplete="email"
+          [placeholder]="'pages.register.form.email.placeholder' | translate"
+          [class.is-invalid]="isInvalid('email')"
+        />
+
+        @if (isInvalid('email')) {
+          <p class="form-error">
+            {{ 'pages.register.form.email.error' | translate }}
+          </p>
+        }
+      </div>
+
+      <button class="register-submit" type="submit" [disabled]="isSubmitting()">
+        @if (isSubmitting()) {
+          {{ 'pages.register.form.submitting' | translate }}
+        } @else {
+          {{ 'pages.register.form.submit' | translate }}
+        }
+      </button>
+
+      @switch (registrationStatus()) {
+        @case ('preparing') {
+          <p class="form-info">
+            {{ 'pages.register.form.messages.preparing' | translate }}
+          </p>
+        }
+
+        @case ('creatingPasskey') {
+          <p class="form-info">
+            {{ 'pages.register.form.messages.creatingPasskey' | translate }}
+          </p>
+        }
+
+        @case ('finishing') {
+          <p class="form-info">
+            {{ 'pages.register.form.messages.finishing' | translate }}
+          </p>
+        }
+
+        @case ('registered') {
+          <p class="form-success">
+            {{ 'pages.register.form.messages.registered' | translate }}
+          </p>
+        }
+      }
+
+      @if (submitError(); as errorKey) {
+        <p class="form-error form-submit-error">
+          {{ errorKey | translate }}
+        </p>
+      }
+    </form>
+  </div>
+
+  <aside class="register-info">
+    <h2>{{ 'pages.register.passkeyInfo.title' | translate }}</h2>
+    <p>{{ 'pages.register.passkeyInfo.text' | translate }}</p>
+  </aside>
+
+  @if (isPasskeyExplanationOpen()) {
+    <div class="passkey-modal-backdrop" role="presentation">
+      <section
+        class="passkey-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="passkeyModalTitle"
+      >
+        <p class="page-kicker">
+          {{ 'pages.register.passkeyModal.kicker' | translate }}
+        </p>
+
+        <h2 id="passkeyModalTitle">
+          {{ 'pages.register.passkeyModal.title' | translate }}
+        </h2>
+
+        <p class="passkey-modal-email">
+          {{ pendingRegistrationEmail() }}
+        </p>
+
+        <div class="passkey-modal-content">
+          <p>
+            {{ 'pages.register.passkeyModal.intro' | translate }}
+          </p>
+
+          <p>
+            {{ 'pages.register.passkeyModal.browserDialog' | translate }}
+          </p>
+
+          <p>
+            {{ 'pages.register.passkeyModal.privacy' | translate }}
+          </p>
+        </div>
+
+        @if (registrationStatus() === 'registered') {
+          <p class="form-success">
+            {{ 'pages.register.form.messages.registered' | translate }}
+          </p>
+        }
+
+        <div class="passkey-modal-actions">
+          <button
+            class="passkey-modal-secondary"
+            type="button"
+            [disabled]="isSubmitting()"
+            (click)="closePasskeyExplanation()"
+          >
+            {{ 'pages.register.passkeyModal.back' | translate }}
+          </button>
+
+          <button
+            class="passkey-modal-primary"
+            type="button"
+            [disabled]="isSubmitting()"
+            (click)="continueRegistrationWithPasskey()"
+          >
+            @if (isSubmitting()) {
+              {{ 'pages.register.form.submitting' | translate }}
+            } @else {
+              {{ 'pages.register.passkeyModal.createPasskey' | translate }}
+            }
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</section>
+</file>
+
+<file path="src/app/features/auth/pages/register-page/register-page.ts">
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, computed, inject, signal } from '@angular/core';
+import {
+  NonNullableFormBuilder,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
+
+import { RegisterFinishResponse } from '../../models/auth-api.models';
+import { AuthApiService } from '../../services/auth-api.service';
+import { AuthStateService } from '../../services/auth-state.service';
+import {
+  normalizeRegistrationPublicKeyOptions,
+  serializeRegistrationCredential,
+} from '../../utils/webauthn-registration';
+
+type RegisterFormControlName = 'firstName' | 'lastName' | 'email';
+
+type RegistrationStatus =
+  | 'idle'
+  | 'preparing'
+  | 'creatingPasskey'
+  | 'finishing'
+  | 'registered';
+
+@Component({
+  selector: 'app-register-page',
+  imports: [ReactiveFormsModule, TranslatePipe],
+  templateUrl: './register-page.html',
+  styleUrl: './register-page.css',
+})
+export class RegisterPage {
+  private readonly formBuilder = inject(NonNullableFormBuilder);
+  private readonly authApi = inject(AuthApiService);
+  private readonly authState = inject(AuthStateService);
+
+  readonly isSubmitting = signal(false);
+  readonly isPasskeyExplanationOpen = signal(false);
+  readonly registrationStatus = signal<RegistrationStatus>('idle');
+  readonly registerFinishResponse = signal<RegisterFinishResponse | null>(null);
+  readonly submitError = signal<string | null>(null);
+
+  readonly pendingRegistrationEmail = computed(() =>
+    this.registerForm.controls.email.value.trim(),
+  );
+
+  readonly registerForm = this.formBuilder.group({
+    firstName: [
+      '',
+      [Validators.required, Validators.minLength(2), Validators.maxLength(80)],
+    ],
+    lastName: [
+      '',
+      [Validators.required, Validators.minLength(2), Validators.maxLength(80)],
+    ],
+    email: [
+      '',
+      [Validators.required, Validators.email, Validators.maxLength(180)],
+    ],
+  });
+
+  isInvalid(controlName: RegisterFormControlName): boolean {
+    const control = this.registerForm.controls[controlName];
+
+    return control.invalid && (control.dirty || control.touched);
+  }
+
+  onSubmit(): void {
+    this.registerForm.markAllAsTouched();
+    this.submitError.set(null);
+    this.registerFinishResponse.set(null);
+    this.registrationStatus.set('idle');
+
+    if (this.registerForm.invalid || this.isSubmitting()) {
+      return;
+    }
+
+    this.isPasskeyExplanationOpen.set(true);
+  }
+
+  closePasskeyExplanation(): void {
+    if (this.isSubmitting()) {
+      return;
+    }
+
+    this.isPasskeyExplanationOpen.set(false);
+  }
+
+  async continueRegistrationWithPasskey(): Promise<void> {
+    this.submitError.set(null);
+    this.registerFinishResponse.set(null);
+    this.registrationStatus.set('idle');
+
+    if (this.registerForm.invalid || this.isSubmitting()) {
+      return;
+    }
+
+    if (!this.isWebAuthnAvailable()) {
+      this.submitError.set('pages.register.form.errors.passkeyUnsupported');
+      this.isPasskeyExplanationOpen.set(false);
+      return;
+    }
+
+    this.isSubmitting.set(true);
+
+    try {
+      const payload = this.registerForm.getRawValue();
+
+      this.registrationStatus.set('preparing');
+
+      const registerStartResponse = await firstValueFrom(
+        this.authApi.registerStart(payload),
+      );
+
+      this.registrationStatus.set('creatingPasskey');
+
+      const publicKey = normalizeRegistrationPublicKeyOptions(
+        registerStartResponse.publicKey,
+      );
+
+      const credential = await navigator.credentials.create({ publicKey });
+      const serializedCredential = serializeRegistrationCredential(credential);
+
+      this.registrationStatus.set('finishing');
+
+      const registerFinishResponse = await firstValueFrom(
+        this.authApi.registerFinish({
+          email: payload.email,
+          credential: serializedCredential,
+        }),
+      );
+
+      this.registerFinishResponse.set(registerFinishResponse);
+      this.authState.loadCurrentUser();
+      this.registrationStatus.set('registered');
+      this.isPasskeyExplanationOpen.set(false);
+    } catch (error) {
+      this.registrationStatus.set('idle');
+      this.submitError.set(this.toRegisterErrorKey(error));
+    } finally {
+      this.isSubmitting.set(false);
+    }
+  }
+
+  private isWebAuthnAvailable(): boolean {
+    return (
+      typeof navigator !== 'undefined' &&
+      typeof navigator.credentials !== 'undefined' &&
+      typeof PublicKeyCredential !== 'undefined'
+    );
+  }
+
+  private toRegisterErrorKey(error: unknown): string {
+    if (error instanceof DOMException) {
+      if (error.name === 'NotAllowedError') {
+        return 'pages.register.form.errors.passkeyCancelled';
+      }
+
+      if (error.name === 'InvalidStateError') {
+        return 'pages.register.form.errors.passkeyInvalidState';
+      }
+
+      return 'pages.register.form.errors.passkeyCreationFailed';
+    }
+
+    if (!(error instanceof HttpErrorResponse)) {
+      return 'pages.register.form.errors.unknown';
+    }
+
+    if (error.status === 400) {
+      return 'pages.register.form.errors.invalidInput';
+    }
+
+    if (error.status === 403) {
+      return 'pages.register.form.errors.forbiddenOrigin';
+    }
+
+    if (error.status === 404) {
+      return 'pages.register.form.errors.registrationSessionNotFound';
+    }
+
+    if (error.status === 409) {
+      return 'pages.register.form.errors.emailAlreadyRegistered';
+    }
+
+    if (error.status === 410) {
+      return 'pages.register.form.errors.registrationSessionExpired';
+    }
+
+    return 'pages.register.form.errors.finishFailed';
+  }
+}
+</file>
+
 <file path="src/styles.css">
 @import '@fontsource/roboto/latin-400.css';
 @import '@fontsource/roboto/latin-500.css';
@@ -1900,306 +2656,6 @@ a {
     "prettier": "^3.8.1",
     "typescript": "~5.9.2",
     "vitest": "^4.0.8"
-  }
-}
-</file>
-
-<file path="public/i18n/de.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Lernen · Üben · Verstehen · Sprechen",
-    "language": "Sprache",
-    "mainNavigation": "Hauptnavigation"
-  },
-  "nav": {
-    "search": "Suche",
-    "training": "Training",
-    "account": "Konto"
-  },
-  "auth": {
-    "login": "Anmelden",
-    "register": "Registrieren"
-  },
-  "pages": {
-    "search": {
-      "kicker": "Wörterbuch",
-      "title": "Wörter suchen und verstehen",
-      "description": "Hier entsteht die zentrale Suchseite des DeutschLabor Dictionary."
-    },
-    "training": {
-      "kicker": "Training",
-      "title": "Wörter gezielt wiederholen",
-      "description": "Hier entsteht der Trainingsbereich für gesuchte und gespeicherte Wörter."
-    },
-    "account": {
-      "kicker": "Konto",
-      "title": "Dein persönlicher Bereich",
-      "description": "Hier entsteht der Bereich für Profil, Spracheinstellungen und Sicherheit."
-    },
-    "login": {
-      "kicker": "Anmeldung",
-      "title": "Bei DeutschLabor anmelden",
-      "description": "Hier entsteht die Anmeldung mit Passkey."
-    },
-    "register": {
-      "kicker": "Registrierung",
-      "title": "DeutschLabor-Konto erstellen",
-      "description": "Hier entsteht die Registrierung mit Passkey und E-Mail-Bestätigung."
-    }
-  }
-}
-</file>
-
-<file path="public/i18n/en.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Learn · Practise · Understand · Speak",
-    "language": "Language",
-    "mainNavigation": "Main navigation"
-  },
-  "nav": {
-    "search": "Search",
-    "training": "Training",
-    "account": "Account"
-  },
-  "auth": {
-    "login": "Log in",
-    "register": "Register"
-  },
-  "pages": {
-    "search": {
-      "kicker": "Dictionary",
-      "title": "Search and understand words",
-      "description": "This will become the main search page of the DeutschLabor Dictionary."
-    },
-    "training": {
-      "kicker": "Training",
-      "title": "Review words with focus",
-      "description": "This will become the training area for searched and saved words."
-    },
-    "account": {
-      "kicker": "Account",
-      "title": "Your personal area",
-      "description": "This will become the area for profile, language settings and security."
-    },
-    "login": {
-      "kicker": "Login",
-      "title": "Log in to DeutschLabor",
-      "description": "This will become the passkey login page."
-    },
-    "register": {
-      "kicker": "Registration",
-      "title": "Create a DeutschLabor account",
-      "description": "This will become the registration page with passkey and email verification."
-    }
-  }
-}
-</file>
-
-<file path="public/i18n/hu.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Tanulni · Gyakorolni · Érteni · Beszélni",
-    "language": "Nyelv",
-    "mainNavigation": "Fő navigáció"
-  },
-  "nav": {
-    "search": "Keresés",
-    "training": "Gyakorlás",
-    "account": "Fiók"
-  },
-  "auth": {
-    "login": "Belépés",
-    "register": "Regisztráció"
-  },
-  "pages": {
-    "search": {
-      "kicker": "Szótár",
-      "title": "Szavak keresése és megértése",
-      "description": "Itt készül a DeutschLabor Dictionary fő keresőoldala."
-    },
-    "training": {
-      "kicker": "Gyakorlás",
-      "title": "Szavak célzott ismétlése",
-      "description": "Itt készül a gyakorlási terület a keresett és mentett szavakhoz."
-    },
-    "account": {
-      "kicker": "Fiók",
-      "title": "A személyes felületed",
-      "description": "Itt készül a profil, a nyelvi beállítások és a biztonsági rész."
-    },
-    "login": {
-      "kicker": "Belépés",
-      "title": "Belépés a DeutschLaborba",
-      "description": "Itt készül a passkey-alapú belépési oldal."
-    },
-    "register": {
-      "kicker": "Regisztráció",
-      "title": "DeutschLabor-fiók létrehozása",
-      "description": "Itt készül a passkey-regisztráció és az email-megerősítés."
-    }
-  }
-}
-</file>
-
-<file path="public/i18n/pl.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Uczyć się · Ćwiczyć · Rozumieć · Mówić",
-    "language": "Język",
-    "mainNavigation": "Główna nawigacja"
-  },
-  "nav": {
-    "search": "Szukaj",
-    "training": "Trening",
-    "account": "Konto"
-  },
-  "auth": {
-    "login": "Logowanie",
-    "register": "Rejestracja"
-  },
-  "pages": {
-    "search": {
-      "kicker": "Słownik",
-      "title": "Szukaj i rozumiej słowa",
-      "description": "Tutaj powstanie główna strona wyszukiwania DeutschLabor Dictionary."
-    },
-    "training": {
-      "kicker": "Trening",
-      "title": "Powtarzaj słowa świadomie",
-      "description": "Tutaj powstanie strefa treningu dla wyszukanych i zapisanych słów."
-    },
-    "account": {
-      "kicker": "Konto",
-      "title": "Twoja osobista strefa",
-      "description": "Tutaj powstanie profil, ustawienia języka i bezpieczeństwo."
-    },
-    "login": {
-      "kicker": "Logowanie",
-      "title": "Zaloguj się do DeutschLabor",
-      "description": "Tutaj powstanie strona logowania przez passkey."
-    },
-    "register": {
-      "kicker": "Rejestracja",
-      "title": "Utwórz konto DeutschLabor",
-      "description": "Tutaj powstanie rejestracja przez passkey i potwierdzenie email."
-    }
-  }
-}
-</file>
-
-<file path="public/i18n/ru.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Учить · Тренировать · Понимать · Говорить",
-    "language": "Язык",
-    "mainNavigation": "Главная навигация"
-  },
-  "nav": {
-    "search": "Поиск",
-    "training": "Тренировка",
-    "account": "Кабинет"
-  },
-  "auth": {
-    "login": "Вход",
-    "register": "Регистрация"
-  },
-  "pages": {
-    "search": {
-      "kicker": "Словарь",
-      "title": "Искать и понимать слова",
-      "description": "Здесь будет главная страница поиска DeutschLabor Dictionary."
-    },
-    "training": {
-      "kicker": "Тренировка",
-      "title": "Целенаправленно повторять слова",
-      "description": "Здесь будет зона тренировки для найденных и сохранённых слов."
-    },
-    "account": {
-      "kicker": "Кабинет",
-      "title": "Твоя личная зона",
-      "description": "Здесь будет профиль, языковые настройки и безопасность."
-    },
-    "login": {
-      "kicker": "Вход",
-      "title": "Войти в DeutschLabor",
-      "description": "Здесь будет страница входа через passkey."
-    },
-    "register": {
-      "kicker": "Регистрация",
-      "title": "Создать аккаунт DeutschLabor",
-      "description": "Здесь будет регистрация через passkey и подтверждение email."
-    }
-  }
-}
-</file>
-
-<file path="public/i18n/uk.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Вчити · Тренувати · Розуміти · Говорити",
-    "language": "Мова",
-    "mainNavigation": "Головна навігація"
-  },
-  "nav": {
-    "search": "Пошук",
-    "training": "Тренування",
-    "account": "Кабінет"
-  },
-  "auth": {
-    "login": "Вхід",
-    "register": "Реєстрація"
-  },
-  "pages": {
-    "search": {
-      "kicker": "Словник",
-      "title": "Шукати й розуміти слова",
-      "description": "Тут буде головна сторінка пошуку DeutschLabor Dictionary."
-    },
-    "training": {
-      "kicker": "Тренування",
-      "title": "Цілеспрямовано повторювати слова",
-      "description": "Тут буде зона тренування для знайдених і збережених слів."
-    },
-    "account": {
-      "kicker": "Кабінет",
-      "title": "Твоя особиста зона",
-      "description": "Тут буде профіль, мовні налаштування і безпека."
-    },
-    "login": {
-      "kicker": "Вхід",
-      "title": "Увійти в DeutschLabor",
-      "description": "Тут буде сторінка входу через passkey."
-    },
-    "register": {
-      "kicker": "Реєстрація",
-      "title": "Створити акаунт DeutschLabor",
-      "description": "Тут буде реєстрація через passkey і підтвердження email."
-    }
   }
 }
 </file>
@@ -2477,6 +2933,612 @@ export const routes: Routes = [
   .main-nav a,
   .auth-links a {
     min-width: auto;
+  }
+}
+</file>
+
+<file path="public/i18n/de.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Lernen · Üben · Verstehen · Sprechen",
+    "language": "Sprache",
+    "mainNavigation": "Hauptnavigation"
+  },
+  "nav": {
+    "search": "Suche",
+    "training": "Training",
+    "account": "Konto"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "register": "Registrieren"
+  },
+  "pages": {
+    "search": {
+      "kicker": "Wörterbuch",
+      "title": "Wörter suchen und verstehen",
+      "description": "Hier entsteht die zentrale Suchseite des DeutschLabor Dictionary."
+    },
+    "training": {
+      "kicker": "Training",
+      "title": "Wörter gezielt wiederholen",
+      "description": "Hier entsteht der Trainingsbereich für gesuchte und gespeicherte Wörter."
+    },
+    "account": {
+      "kicker": "Konto",
+      "title": "Dein persönlicher Bereich",
+      "description": "Hier entsteht der Bereich für Profil, Spracheinstellungen und Sicherheit."
+    },
+    "login": {
+      "kicker": "Anmeldung",
+      "title": "Bei DeutschLabor anmelden",
+      "description": "Hier entsteht die Anmeldung mit Passkey."
+    },
+    "register": {
+      "kicker": "Registrierung",
+      "title": "DeutschLabor-Konto erstellen",
+      "description": "Erstelle dein Konto mit E-Mail und Passkey. Im nächsten Schritt wird dein Gerät einen sicheren Passkey erstellen.",
+      "form": {
+        "firstName": {
+          "label": "Vorname",
+          "placeholder": "Dein Vorname",
+          "error": "Bitte gib deinen Vornamen ein."
+        },
+        "lastName": {
+          "label": "Nachname",
+          "placeholder": "Dein Nachname",
+          "error": "Bitte gib deinen Nachnamen ein."
+        },
+        "email": {
+          "label": "E-Mail",
+          "placeholder": "name@example.com",
+          "error": "Bitte gib eine gültige E-Mail-Adresse ein."
+        },
+        "submit": "Mit Passkey registrieren",
+        "submitting": "Registrierung wird vorbereitet...",
+        "messages": {
+          "preparing": "Registrierung wird vorbereitet...",
+          "creatingPasskey": "Bestätige die Erstellung des Passkeys im Browserfenster oder auf deinem Gerät.",
+          "finishing": "Registrierung wird abgeschlossen...",
+          "registered": "Das Konto wurde erstellt. Du bist jetzt bei DeutschLabor angemeldet. Wir haben dir eine E-Mail zur Bestätigung deiner Adresse gesendet."
+        },
+        "errors": {
+          "invalidInput": "Bitte überprüfe deine Eingaben.",
+          "emailAlreadyRegistered": "Diese E-Mail-Adresse ist bereits registriert.",
+          "forbiddenOrigin": "Dieser Origin ist für die Registrierung nicht erlaubt.",
+          "registrationSessionNotFound": "Die Registrierungssitzung wurde nicht gefunden. Starte die Registrierung erneut.",
+          "registrationSessionExpired": "Die Registrierungssitzung ist abgelaufen. Starte die Registrierung erneut.",
+          "passkeyUnsupported": "Dieser Browser oder dieses Gerät unterstützt keine Passkeys.",
+          "passkeyCancelled": "Die Passkey-Erstellung wurde abgebrochen.",
+          "passkeyInvalidState": "Für dieses Konto könnte auf diesem Gerät bereits ein Passkey existieren.",
+          "passkeyCreationFailed": "Der Passkey konnte nicht erstellt werden.",
+          "finishFailed": "Die Registrierung konnte nicht abgeschlossen werden.",
+          "unknown": "Ein unbekannter Fehler ist aufgetreten."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Was passiert als Nächstes?",
+        "text": "Nach dem Absenden fordert der Browser dein Gerät auf, einen Passkey zu erstellen. Danach wird die Registrierung am Server abgeschlossen."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Konto mit Passkey erstellen",
+        "intro": "DeutschLabor verwendet kein Passwort. Stattdessen erstellt dein Gerät einen Passkey — einen sicheren Zugangsschlüssel für dein Konto.",
+        "browserDialog": "Nach dem Klick auf die Schaltfläche öffnet der Browser ein Fenster zur Passkey-Erstellung. Du kannst die Aktion mit deinem Smartphone, Windows Hello, Face ID, Touch ID, PIN oder einer anderen Methode bestätigen, die dein Gerät unterstützt.",
+        "privacy": "DeutschLabor erhält weder deinen Fingerabdruck noch Face ID oder PIN. Diese Daten bleiben auf deinem Gerät. Auf dem Server wird nur der öffentliche Schlüssel gespeichert.",
+        "back": "Zurück",
+        "createPasskey": "Passkey erstellen"
+      }
+    }
+  }
+}
+</file>
+
+<file path="public/i18n/en.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Learn · Practise · Understand · Speak",
+    "language": "Language",
+    "mainNavigation": "Main navigation"
+  },
+  "nav": {
+    "search": "Search",
+    "training": "Training",
+    "account": "Account"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Register"
+  },
+  "pages": {
+    "search": {
+      "kicker": "Dictionary",
+      "title": "Search and understand words",
+      "description": "This will become the main search page of the DeutschLabor Dictionary."
+    },
+    "training": {
+      "kicker": "Training",
+      "title": "Review words with focus",
+      "description": "This will become the training area for searched and saved words."
+    },
+    "account": {
+      "kicker": "Account",
+      "title": "Your personal area",
+      "description": "This will become the area for profile, language settings and security."
+    },
+    "login": {
+      "kicker": "Login",
+      "title": "Log in to DeutschLabor",
+      "description": "This will become the passkey login page."
+    },
+    "register": {
+      "kicker": "Registration",
+      "title": "Create a DeutschLabor account",
+      "description": "Create your account with email and passkey. In the next step your device will create a secure passkey.",
+      "form": {
+        "firstName": {
+          "label": "First name",
+          "placeholder": "Your first name",
+          "error": "Please enter your first name."
+        },
+        "lastName": {
+          "label": "Last name",
+          "placeholder": "Your last name",
+          "error": "Please enter your last name."
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Please enter a valid email address."
+        },
+        "submit": "Register with passkey",
+        "submitting": "Preparing registration...",
+        "messages": {
+          "preparing": "Preparing registration...",
+          "creatingPasskey": "Confirm passkey creation in the browser window or on your device.",
+          "finishing": "Finishing registration...",
+          "registered": "Your account was created. You are now signed in to DeutschLabor. We sent you an email to verify your address."
+        },
+        "errors": {
+          "invalidInput": "Please check your input.",
+          "emailAlreadyRegistered": "This email address is already registered.",
+          "forbiddenOrigin": "This origin is not allowed for registration.",
+          "registrationSessionNotFound": "The registration session was not found. Start registration again.",
+          "registrationSessionExpired": "The registration session has expired. Start registration again.",
+          "passkeyUnsupported": "This browser or device does not support passkeys.",
+          "passkeyCancelled": "Passkey creation was cancelled.",
+          "passkeyInvalidState": "A passkey for this account may already exist on this device.",
+          "passkeyCreationFailed": "Passkey could not be created.",
+          "finishFailed": "Registration could not be completed.",
+          "unknown": "An unknown error occurred."
+        }
+      },
+      "passkeyInfo": {
+        "title": "What happens next?",
+        "text": "After submitting the form, the browser will ask your device to create a passkey. Then the registration will be completed on the server."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Create account with passkey",
+        "intro": "DeutschLabor does not use a password. Instead, your device creates a passkey — a secure access key for your account.",
+        "browserDialog": "After clicking the button, the browser will open a passkey creation window. You can confirm the action with your phone, Windows Hello, Face ID, Touch ID, PIN, or another method supported by your device.",
+        "privacy": "DeutschLabor does not receive your fingerprint, Face ID, or PIN. This data stays on your device. Only the public key is stored on the server.",
+        "back": "Back",
+        "createPasskey": "Create passkey"
+      }
+    }
+  }
+}
+</file>
+
+<file path="public/i18n/hu.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Tanulni · Gyakorolni · Érteni · Beszélni",
+    "language": "Nyelv",
+    "mainNavigation": "Fő navigáció"
+  },
+  "nav": {
+    "search": "Keresés",
+    "training": "Gyakorlás",
+    "account": "Fiók"
+  },
+  "auth": {
+    "login": "Belépés",
+    "register": "Regisztráció"
+  },
+  "pages": {
+    "search": {
+      "kicker": "Szótár",
+      "title": "Szavak keresése és megértése",
+      "description": "Itt készül a DeutschLabor Dictionary fő keresőoldala."
+    },
+    "training": {
+      "kicker": "Gyakorlás",
+      "title": "Szavak célzott ismétlése",
+      "description": "Itt készül a gyakorlási terület a keresett és mentett szavakhoz."
+    },
+    "account": {
+      "kicker": "Fiók",
+      "title": "A személyes felületed",
+      "description": "Itt készül a profil, a nyelvi beállítások és a biztonsági rész."
+    },
+    "login": {
+      "kicker": "Belépés",
+      "title": "Belépés a DeutschLaborba",
+      "description": "Itt készül a passkey-alapú belépési oldal."
+    },
+    "register": {
+      "kicker": "Regisztráció",
+      "title": "DeutschLabor-fiók létrehozása",
+      "description": "Hozz létre fiókot emaillel és passkey segítségével. A következő lépésben az eszközöd létrehoz egy biztonságos passkey-t.",
+      "form": {
+        "firstName": {
+          "label": "Keresztnév",
+          "placeholder": "A keresztneved",
+          "error": "Add meg a keresztneved."
+        },
+        "lastName": {
+          "label": "Vezetéknév",
+          "placeholder": "A vezetékneved",
+          "error": "Add meg a vezetékneved."
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Adj meg egy érvényes email-címet."
+        },
+        "submit": "Regisztráció passkey-vel",
+        "submitting": "Regisztráció előkészítése...",
+        "messages": {
+          "preparing": "Regisztráció előkészítése...",
+          "creatingPasskey": "Erősítsd meg a passkey létrehozását a böngészőablakban vagy az eszközödön.",
+          "finishing": "Regisztráció befejezése...",
+          "registered": "A fiók létrejött. Most már be vagy jelentkezve a DeutschLaborba. Küldtünk egy emailt a címed megerősítéséhez."
+        },
+        "errors": {
+          "invalidInput": "Ellenőrizd a megadott adatokat.",
+          "emailAlreadyRegistered": "Ez az email-cím már regisztrálva van.",
+          "forbiddenOrigin": "Ez az origin nem engedélyezett a regisztrációhoz.",
+          "registrationSessionNotFound": "A regisztrációs munkamenet nem található. Indítsd újra a regisztrációt.",
+          "registrationSessionExpired": "A regisztrációs munkamenet lejárt. Indítsd újra a regisztrációt.",
+          "passkeyUnsupported": "Ez a böngésző vagy eszköz nem támogatja a passkey-t.",
+          "passkeyCancelled": "A passkey létrehozása meg lett szakítva.",
+          "passkeyInvalidState": "Ehhez a fiókhoz már létezhet passkey ezen az eszközön.",
+          "passkeyCreationFailed": "Nem sikerült létrehozni a passkey-t.",
+          "finishFailed": "Nem sikerült befejezni a regisztrációt.",
+          "unknown": "Ismeretlen hiba történt."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Mi történik ezután?",
+        "text": "Az űrlap elküldése után a böngésző megkéri az eszközödet, hogy hozzon létre egy passkey-t. Ezután a regisztráció a szerveren fejeződik be."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Fiók létrehozása passkey-vel",
+        "intro": "A DeutschLabor nem használ jelszót. Ehelyett az eszközöd létrehoz egy passkey-t — egy biztonságos hozzáférési kulcsot a fiókodhoz.",
+        "browserDialog": "A gombra kattintás után a böngésző megnyitja a passkey létrehozására szolgáló ablakot. A műveletet telefonnal, Windows Hello-val, Face ID-val, Touch ID-val, PIN-kóddal vagy az eszközöd által támogatott más módszerrel erősítheted meg.",
+        "privacy": "A DeutschLabor nem kapja meg az ujjlenyomatodat, Face ID-dat vagy PIN-kódodat. Ezek az adatok az eszközödön maradnak. A szerveren csak a nyilvános kulcs kerül tárolásra.",
+        "back": "Vissza",
+        "createPasskey": "Passkey létrehozása"
+      }
+    }
+  }
+}
+</file>
+
+<file path="public/i18n/pl.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Uczyć się · Ćwiczyć · Rozumieć · Mówić",
+    "language": "Język",
+    "mainNavigation": "Główna nawigacja"
+  },
+  "nav": {
+    "search": "Szukaj",
+    "training": "Trening",
+    "account": "Konto"
+  },
+  "auth": {
+    "login": "Logowanie",
+    "register": "Rejestracja"
+  },
+  "pages": {
+    "search": {
+      "kicker": "Słownik",
+      "title": "Szukaj i rozumiej słowa",
+      "description": "Tutaj powstanie główna strona wyszukiwania DeutschLabor Dictionary."
+    },
+    "training": {
+      "kicker": "Trening",
+      "title": "Powtarzaj słowa świadomie",
+      "description": "Tutaj powstanie strefa treningu dla wyszukanych i zapisanych słów."
+    },
+    "account": {
+      "kicker": "Konto",
+      "title": "Twoja osobista strefa",
+      "description": "Tutaj powstanie profil, ustawienia języka i bezpieczeństwo."
+    },
+    "login": {
+      "kicker": "Logowanie",
+      "title": "Zaloguj się do DeutschLabor",
+      "description": "Tutaj powstanie strona logowania przez passkey."
+    },
+    "register": {
+      "kicker": "Rejestracja",
+      "title": "Utwórz konto DeutschLabor",
+      "description": "Utwórz konto za pomocą emaila i passkey. W następnym kroku twoje urządzenie utworzy bezpieczny passkey.",
+      "form": {
+        "firstName": {
+          "label": "Imię",
+          "placeholder": "Twoje imię",
+          "error": "Podaj imię."
+        },
+        "lastName": {
+          "label": "Nazwisko",
+          "placeholder": "Twoje nazwisko",
+          "error": "Podaj nazwisko."
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Podaj prawidłowy adres email."
+        },
+        "submit": "Zarejestruj przez passkey",
+        "submitting": "Przygotowywanie rejestracji...",
+        "messages": {
+          "preparing": "Przygotowywanie rejestracji...",
+          "creatingPasskey": "Potwierdź utworzenie passkey w oknie przeglądarki lub na swoim urządzeniu.",
+          "finishing": "Kończenie rejestracji...",
+          "registered": "Konto zostało utworzone. Jesteś teraz zalogowany w DeutschLabor. Wysłaliśmy email do potwierdzenia adresu."
+        },
+        "errors": {
+          "invalidInput": "Sprawdź wprowadzone dane.",
+          "emailAlreadyRegistered": "Ten adres email jest już zarejestrowany.",
+          "forbiddenOrigin": "Ten origin nie jest dozwolony dla rejestracji.",
+          "registrationSessionNotFound": "Nie znaleziono sesji rejestracji. Rozpocznij rejestrację ponownie.",
+          "registrationSessionExpired": "Sesja rejestracji wygasła. Rozpocznij rejestrację ponownie.",
+          "passkeyUnsupported": "Ta przeglądarka lub to urządzenie nie obsługuje passkey.",
+          "passkeyCancelled": "Tworzenie passkey zostało anulowane.",
+          "passkeyInvalidState": "Passkey dla tego konta może już istnieć na tym urządzeniu.",
+          "passkeyCreationFailed": "Nie udało się utworzyć passkey.",
+          "finishFailed": "Nie udało się zakończyć rejestracji.",
+          "unknown": "Wystąpił nieznany błąd."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Co stanie się dalej?",
+        "text": "Po wysłaniu formularza przeglądarka poprosi twoje urządzenie o utworzenie passkey. Następnie rejestracja zostanie zakończona na serwerze."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Tworzenie konta z passkey",
+        "intro": "DeutschLabor nie używa hasła. Zamiast hasła twoje urządzenie utworzy passkey — bezpieczny klucz dostępu do konta.",
+        "browserDialog": "Po kliknięciu przycisku przeglądarka otworzy okno tworzenia passkey. Możesz potwierdzić działanie telefonem, Windows Hello, Face ID, Touch ID, PIN-em albo inną metodą obsługiwaną przez twoje urządzenie.",
+        "privacy": "DeutschLabor nie otrzymuje twojego odcisku palca, Face ID ani PIN-u. Te dane pozostają na twoim urządzeniu. Na serwerze przechowywany jest tylko klucz publiczny.",
+        "back": "Wstecz",
+        "createPasskey": "Utwórz passkey"
+      }
+    }
+  }
+}
+</file>
+
+<file path="public/i18n/ru.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Учить · Тренировать · Понимать · Говорить",
+    "language": "Язык",
+    "mainNavigation": "Главная навигация"
+  },
+  "nav": {
+    "search": "Поиск",
+    "training": "Тренировка",
+    "account": "Кабинет"
+  },
+  "auth": {
+    "login": "Вход",
+    "register": "Регистрация"
+  },
+  "pages": {
+    "search": {
+      "kicker": "Словарь",
+      "title": "Искать и понимать слова",
+      "description": "Здесь будет главная страница поиска DeutschLabor Dictionary."
+    },
+    "training": {
+      "kicker": "Тренировка",
+      "title": "Целенаправленно повторять слова",
+      "description": "Здесь будет зона тренировки для найденных и сохранённых слов."
+    },
+    "account": {
+      "kicker": "Кабинет",
+      "title": "Твоя личная зона",
+      "description": "Здесь будет профиль, языковые настройки и безопасность."
+    },
+    "login": {
+      "kicker": "Вход",
+      "title": "Войти в DeutschLabor",
+      "description": "Здесь будет страница входа через passkey."
+    },
+    "register": {
+      "kicker": "Регистрация",
+      "title": "Создать аккаунт DeutschLabor",
+      "description": "Создай аккаунт с помощью email и passkey. На следующем шаге твоё устройство создаст безопасный passkey.",
+      "form": {
+        "firstName": {
+          "label": "Имя",
+          "placeholder": "Твоё имя",
+          "error": "Введи имя."
+        },
+        "lastName": {
+          "label": "Фамилия",
+          "placeholder": "Твоя фамилия",
+          "error": "Введи фамилию."
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Введи правильный email-адрес."
+        },
+        "submit": "Зарегистрироваться через passkey",
+        "submitting": "Подготовка регистрации...",
+        "messages": {
+          "preparing": "Подготовка регистрации...",
+          "creatingPasskey": "Подтверди создание passkey в окне браузера или на своём устройстве.",
+          "finishing": "Завершение регистрации...",
+          "registered": "Аккаунт создан. Ты уже вошёл в DeutschLabor. Мы отправили email для подтверждения адреса."
+        },
+        "errors": {
+          "invalidInput": "Проверь введённые данные.",
+          "emailAlreadyRegistered": "Этот email-адрес уже зарегистрирован.",
+          "forbiddenOrigin": "Этот origin не разрешён для регистрации.",
+          "registrationSessionNotFound": "Сессия регистрации не найдена. Начни регистрацию заново.",
+          "registrationSessionExpired": "Сессия регистрации истекла. Начни регистрацию заново.",
+          "passkeyUnsupported": "Этот браузер или устройство не поддерживает passkey.",
+          "passkeyCancelled": "Создание passkey было отменено.",
+          "passkeyInvalidState": "Passkey для этого аккаунта уже может существовать на этом устройстве.",
+          "passkeyCreationFailed": "Не удалось создать passkey.",
+          "finishFailed": "Не удалось завершить регистрацию.",
+          "unknown": "Произошла неизвестная ошибка."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Что будет дальше?",
+        "text": "После отправки формы браузер попросит твоё устройство создать passkey. Затем регистрация будет завершена на сервере."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Создание аккаунта с passkey",
+        "intro": "DeutschLabor не использует пароль. Вместо пароля твоё устройство создаст passkey — безопасный ключ доступа к аккаунту.",
+        "browserDialog": "После нажатия кнопки браузер откроет окно создания passkey. Ты можешь подтвердить действие через телефон, Windows Hello, Face ID, Touch ID, PIN или другой способ, который поддерживает твоё устройство.",
+        "privacy": "DeutschLabor не получает твой отпечаток пальца, Face ID или PIN. Эти данные остаются на твоём устройстве. На сервере хранится только публичный ключ.",
+        "back": "Назад",
+        "createPasskey": "Создать passkey"
+      }
+    }
+  }
+}
+</file>
+
+<file path="public/i18n/uk.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Вчити · Тренувати · Розуміти · Говорити",
+    "language": "Мова",
+    "mainNavigation": "Головна навігація"
+  },
+  "nav": {
+    "search": "Пошук",
+    "training": "Тренування",
+    "account": "Кабінет"
+  },
+  "auth": {
+    "login": "Вхід",
+    "register": "Реєстрація"
+  },
+  "pages": {
+    "search": {
+      "kicker": "Словник",
+      "title": "Шукати й розуміти слова",
+      "description": "Тут буде головна сторінка пошуку DeutschLabor Dictionary."
+    },
+    "training": {
+      "kicker": "Тренування",
+      "title": "Цілеспрямовано повторювати слова",
+      "description": "Тут буде зона тренування для знайдених і збережених слів."
+    },
+    "account": {
+      "kicker": "Кабінет",
+      "title": "Твоя особиста зона",
+      "description": "Тут буде профіль, мовні налаштування і безпека."
+    },
+    "login": {
+      "kicker": "Вхід",
+      "title": "Увійти в DeutschLabor",
+      "description": "Тут буде сторінка входу через passkey."
+    },
+    "register": {
+      "kicker": "Реєстрація",
+      "title": "Створити акаунт DeutschLabor",
+      "description": "Створи акаунт за допомогою email і passkey. На наступному кроці твій пристрій створить безпечний passkey.",
+      "form": {
+        "firstName": {
+          "label": "Ім’я",
+          "placeholder": "Твоє ім’я",
+          "error": "Введи ім’я."
+        },
+        "lastName": {
+          "label": "Прізвище",
+          "placeholder": "Твоє прізвище",
+          "error": "Введи прізвище."
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Введи правильну email-адресу."
+        },
+        "submit": "Зареєструватися через passkey",
+        "submitting": "Підготовка реєстрації...",
+        "messages": {
+          "preparing": "Підготовка реєстрації...",
+          "creatingPasskey": "Підтвердь створення passkey у вікні браузера або на своєму пристрої.",
+          "finishing": "Завершення реєстрації...",
+          "registered": "Акаунт створено. Ти вже увійшов у DeutschLabor. Ми надіслали email для підтвердження адреси."
+        },
+        "errors": {
+          "invalidInput": "Перевір введені дані.",
+          "emailAlreadyRegistered": "Ця email-адреса вже зареєстрована.",
+          "forbiddenOrigin": "Цей origin не дозволений для реєстрації.",
+          "registrationSessionNotFound": "Сесію реєстрації не знайдено. Почни реєстрацію ще раз.",
+          "registrationSessionExpired": "Сесія реєстрації закінчилась. Почни реєстрацію ще раз.",
+          "passkeyUnsupported": "Цей браузер або пристрій не підтримує passkey.",
+          "passkeyCancelled": "Створення passkey було скасовано.",
+          "passkeyInvalidState": "Passkey для цього акаунта вже може існувати на цьому пристрої.",
+          "passkeyCreationFailed": "Не вдалося створити passkey.",
+          "finishFailed": "Не вдалося завершити реєстрацію.",
+          "unknown": "Сталася невідома помилка."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Що буде далі?",
+        "text": "Після відправлення форми браузер попросить твій пристрій створити passkey. Потім реєстрація буде завершена на сервері."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Створення акаунта з passkey",
+        "intro": "DeutschLabor не використовує пароль. Замість пароля твій пристрій створить passkey — безпечний ключ доступу для входу в акаунт.",
+        "browserDialog": "Після натискання кнопки браузер відкриє вікно створення passkey. Ти можеш підтвердити дію через телефон, Windows Hello, Face ID, Touch ID, PIN або інший спосіб, який підтримує твій пристрій.",
+        "privacy": "DeutschLabor не отримує твій відбиток пальця, Face ID або PIN. Ці дані залишаються на твоєму пристрої. На сервері зберігається тільки публічний ключ.",
+        "back": "Назад",
+        "createPasskey": "Створити passkey"
+      }
+    }
   }
 }
 </file>

@@ -112,10 +112,6 @@
   font-weight: var(--app-font-weight-bold);
 }
 
-.register-submit:hover {
-  background: #1f2937;
-}
-
 .register-submit:disabled {
   cursor: not-allowed;
   opacity: 0.65;
@@ -238,21 +234,21 @@
   color: #ffffff;
 }
 
-.passkey-modal-primary:hover {
-  background: #1f2937;
-}
-
 .passkey-modal-secondary {
   border: 1px solid #bfdbfe;
   background: #ffffff;
   color: #1e40af;
 }
 
-.passkey-modal-secondary:hover {
-  background: #eff6ff;
-}
-
 .passkey-modal-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.65;
+}
+
+.register-fieldset {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }

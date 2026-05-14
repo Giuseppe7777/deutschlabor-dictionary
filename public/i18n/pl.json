@@ -36,7 +36,44 @@
     "login": {
       "kicker": "Logowanie",
       "title": "Zaloguj się do DeutschLabor",
-      "description": "Tutaj powstanie strona logowania przez passkey."
+      "description": "Zaloguj się za pomocą emaila i passkey.",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Podaj prawidłowy adres email."
+        },
+        "submit": "Zaloguj się z passkey",
+        "submitting": "Przygotowywanie logowania...",
+        "messages": {
+          "preparing": "Pobieranie login challenge z serwera...",
+          "challengeReady": "Login challenge został odebrany.",
+          "gettingPasskey": "Przeglądarka prosi o twój passkey...",
+          "passkeyReady": "Passkey został potwierdzony.",
+          "finishing": "Kończenie logowania na serwerze...",
+          "authenticated": "Jesteś teraz zalogowany w DeutschLabor."
+        },
+        "errors": {
+          "invalidInput": "Sprawdź wprowadzone dane.",
+          "userNotFound": "Nie znaleziono konta dla tego adresu email.",
+          "noPasskeyRegistered": "Dla tego konta nie zarejestrowano jeszcze passkey.",
+          "forbiddenOrigin": "Ten origin nie jest dozwolony dla logowania.",
+          "missingRequiredFields": "Dane logowania są niepełne.",
+          "loginSessionNotFound": "Nie znaleziono sesji logowania. Rozpocznij logowanie ponownie.",
+          "loginSessionExpired": "Sesja logowania wygasła. Rozpocznij logowanie ponownie.",
+          "assertionValidationFailed": "Nie udało się zweryfikować potwierdzenia passkey.",
+          "passkeyUnsupported": "Ta przeglądarka nie obsługuje passkey.",
+          "passkeyCancelledOrFailed": "Passkey nie został potwierdzony albo akcja została anulowana.",
+          "tooManyRequests": "Zbyt wiele prób. Poczekaj i spróbuj ponownie później.",
+          "startFailed": "Nie udało się przygotować logowania.",
+          "finishFailed": "Nie udało się zakończyć logowania.",
+          "unknown": "Wystąpił nieznany błąd."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Jak działa logowanie?",
+        "text": "Najpierw wpisujesz email. Następnie przeglądarka poprosi o twój passkey. Po udanym potwierdzeniu serwer utworzy twoją sesję."
+      }
     },
     "register": {
       "kicker": "Rejestracja",

@@ -1,5 +1,66 @@
-<section class="page-placeholder">
-  <p class="page-kicker">{{ 'pages.login.kicker' | translate }}</p>
-  <h1>{{ 'pages.login.title' | translate }}</h1>
-  <p>{{ 'pages.login.description' | translate }}</p>
+<section class="login-page">
+  <div class="login-card">
+    <p class="page-kicker">{{ 'pages.login.kicker' | translate }}</p>
+
+    <h1>{{ 'pages.login.title' | translate }}</h1>
+
+    <p class="login-description">
+      {{ 'pages.login.description' | translate }}
+    </p>
+
+    <form
+      class="login-form"
+      [formGroup]="loginForm"
+      (ngSubmit)="onSubmit()"
+      novalidate
+    >
+      <fieldset class="login-fieldset" [disabled]="isFormLocked()">
+        <div class="form-field">
+          <label for="loginEmail">
+            {{ 'pages.login.form.email.label' | translate }}
+          </label>
+
+          <input
+            id="loginEmail"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            [placeholder]="'pages.login.form.email.placeholder' | translate"
+            [class.is-invalid]="isInvalid('email')"
+          />
+
+          @if (isInvalid('email')) {
+            <p class="form-error">
+              {{ 'pages.login.form.email.error' | translate }}
+            </p>
+          }
+        </div>
+
+        <button class="login-submit" type="submit" [disabled]="isFormLocked()">
+          @if (isSubmitting()) {
+            {{ 'pages.login.form.submitting' | translate }}
+          } @else {
+            {{ 'pages.login.form.submit' | translate }}
+          }
+        </button>
+      </fieldset>
+
+      @if (statusMessageKey(); as messageKey) {
+        <p class="form-status">
+          {{ messageKey | translate }}
+        </p>
+      }
+
+      @if (submitError(); as errorKey) {
+        <p class="form-error form-submit-error">
+          {{ errorKey | translate }}
+        </p>
+      }
+    </form>
+  </div>
+
+  <aside class="login-info">
+    <h2>{{ 'pages.login.passkeyInfo.title' | translate }}</h2>
+    <p>{{ 'pages.login.passkeyInfo.text' | translate }}</p>
+  </aside>
 </section>

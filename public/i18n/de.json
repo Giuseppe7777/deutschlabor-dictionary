@@ -36,7 +36,44 @@
     "login": {
       "kicker": "Anmeldung",
       "title": "Bei DeutschLabor anmelden",
-      "description": "Hier entsteht die Anmeldung mit Passkey."
+      "description": "Melde dich mit deiner E-Mail und deinem Passkey an.",
+      "form": {
+        "email": {
+          "label": "E-Mail",
+          "placeholder": "name@example.com",
+          "error": "Bitte gib eine gültige E-Mail-Adresse ein."
+        },
+        "submit": "Mit Passkey anmelden",
+        "submitting": "Anmeldung wird vorbereitet...",
+        "messages": {
+          "preparing": "Login-Challenge wird vom Server angefordert...",
+          "challengeReady": "Login-Challenge wurde empfangen.",
+          "gettingPasskey": "Der Browser fordert deinen Passkey an...",
+          "passkeyReady": "Der Passkey wurde bestätigt.",
+          "finishing": "Login wird auf dem Server abgeschlossen...",
+          "authenticated": "Du bist jetzt bei DeutschLabor angemeldet."
+        },
+        "errors": {
+          "invalidInput": "Bitte überprüfe deine Eingabe.",
+          "userNotFound": "Für diese E-Mail wurde kein Konto gefunden.",
+          "noPasskeyRegistered": "Für dieses Konto ist kein Passkey registriert.",
+          "forbiddenOrigin": "Dieser Ursprung ist für den Login nicht erlaubt.",
+          "missingRequiredFields": "Die Login-Daten sind unvollständig.",
+          "loginSessionNotFound": "Die Login-Sitzung wurde nicht gefunden. Starte den Login erneut.",
+          "loginSessionExpired": "Die Login-Sitzung ist abgelaufen. Starte den Login erneut.",
+          "assertionValidationFailed": "Die Passkey-Bestätigung konnte nicht geprüft werden.",
+          "passkeyUnsupported": "Dieser Browser unterstützt keine Passkeys.",
+          "passkeyCancelledOrFailed": "Der Passkey wurde nicht bestätigt oder der Vorgang wurde abgebrochen.",
+          "tooManyRequests": "Zu viele Versuche. Bitte warte kurz und versuche es später erneut.",
+          "startFailed": "Der Login konnte nicht vorbereitet werden.",
+          "finishFailed": "Der Login konnte nicht abgeschlossen werden.",
+          "unknown": "Ein unbekannter Fehler ist aufgetreten."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Wie funktioniert der Login?",
+        "text": "Zuerst gibst du deine E-Mail ein. Danach fordert der Browser deinen Passkey an. Nach erfolgreicher Bestätigung erstellt der Server deine Sitzung."
+      }
     },
     "register": {
       "kicker": "Registrierung",

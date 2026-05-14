@@ -36,7 +36,44 @@
     "login": {
       "kicker": "Login",
       "title": "Log in to DeutschLabor",
-      "description": "This will become the passkey login page."
+      "description": "Log in with your email and passkey.",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Please enter a valid email address."
+        },
+        "submit": "Log in with passkey",
+        "submitting": "Preparing login...",
+        "messages": {
+          "preparing": "Requesting login challenge from the server...",
+          "challengeReady": "Login challenge was received.",
+          "gettingPasskey": "The browser is requesting your passkey...",
+          "passkeyReady": "Passkey was confirmed.",
+          "finishing": "Finishing login on the server...",
+          "authenticated": "You are now logged in to DeutschLabor."
+        },
+        "errors": {
+          "invalidInput": "Please check your input.",
+          "userNotFound": "No account was found for this email address.",
+          "noPasskeyRegistered": "No passkey is registered for this account.",
+          "forbiddenOrigin": "This origin is not allowed for login.",
+          "missingRequiredFields": "The login data is incomplete.",
+          "loginSessionNotFound": "The login session was not found. Start login again.",
+          "loginSessionExpired": "The login session has expired. Start login again.",
+          "assertionValidationFailed": "The passkey confirmation could not be verified.",
+          "passkeyUnsupported": "This browser does not support passkeys.",
+          "passkeyCancelledOrFailed": "The passkey was not confirmed or the action was cancelled.",
+          "tooManyRequests": "Too many attempts. Please wait and try again later.",
+          "startFailed": "Login could not be prepared.",
+          "finishFailed": "Login could not be completed.",
+          "unknown": "An unknown error occurred."
+        }
+      },
+      "passkeyInfo": {
+        "title": "How does login work?",
+        "text": "First enter your email. Then the browser asks for your passkey. After successful confirmation, the server creates your session."
+      }
     },
     "register": {
       "kicker": "Registration",

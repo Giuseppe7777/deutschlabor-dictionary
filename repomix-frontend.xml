@@ -86,6 +86,7 @@ src/app/features/auth/pages/register-page/register-page.ts
 src/app/features/auth/README.md
 src/app/features/auth/services/auth-api.service.ts
 src/app/features/auth/services/auth-state.service.ts
+src/app/features/auth/utils/webauthn-authentication.ts
 src/app/features/auth/utils/webauthn-registration.ts
 src/app/features/dictionary/models/dictionary-language-pair.ts
 src/app/features/dictionary/pages/search-page/search-page.css
@@ -116,6 +117,136 @@ tsconfig.spec.json
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="src/app/features/auth/utils/webauthn-authentication.ts">
+import { PublicKeyCredentialRequestOptionsFromServer } from '../models/auth-api.models';
+
+export interface SerializedAuthenticationCredential {
+  id: string;
+  rawId: string;
+  type: string;
+  authenticatorAttachment?: string | null;
+  response: {
+    clientDataJSON: string;
+    authenticatorData: string;
+    signature: string;
+    userHandle?: string | null;
+  };
+  clientExtensionResults: AuthenticationExtensionsClientOutputs;
+}
+
+export function normalizeAuthenticationPublicKeyOptions(
+  input: PublicKeyCredentialRequestOptionsFromServer,
+): PublicKeyCredentialRequestOptions {
+  const publicKey = structuredClone(input);
+
+  return {
+    ...publicKey,
+    challenge: base64UrlToArrayBuffer(publicKey.challenge),
+    allowCredentials: publicKey.allowCredentials?.map((credential) => ({
+      ...credential,
+      id: base64UrlToArrayBuffer(credential.id),
+    })),
+  };
+}
+
+export function serializeAuthenticationCredential(
+  credential: Credential | null,
+): SerializedAuthenticationCredential {
+  if (!isPublicKeyCredential(credential)) {
+    throw new Error('authentication_credential_missing_or_invalid');
+  }
+
+  if (hasToJson(credential)) {
+    return credential.toJSON() as unknown as SerializedAuthenticationCredential;
+  }
+
+  return serializeAuthenticationCredentialManually(credential);
+}
+
+function serializeAuthenticationCredentialManually(
+  credential: PublicKeyCredential,
+): SerializedAuthenticationCredential {
+  const response = credential.response;
+
+  if (!isAuthenticatorAssertionResponse(response)) {
+    throw new Error('authentication_assertion_response_missing_or_invalid');
+  }
+
+  return {
+    id: credential.id,
+    rawId: arrayBufferToBase64Url(credential.rawId),
+    type: credential.type,
+    authenticatorAttachment: credential.authenticatorAttachment,
+    response: {
+      clientDataJSON: arrayBufferToBase64Url(response.clientDataJSON),
+      authenticatorData: arrayBufferToBase64Url(response.authenticatorData),
+      signature: arrayBufferToBase64Url(response.signature),
+      userHandle: response.userHandle
+        ? arrayBufferToBase64Url(response.userHandle)
+        : null,
+    },
+    clientExtensionResults: credential.getClientExtensionResults(),
+  };
+}
+
+function isPublicKeyCredential(
+  credential: Credential | null,
+): credential is PublicKeyCredential {
+  return (
+    typeof PublicKeyCredential !== 'undefined' &&
+    credential instanceof PublicKeyCredential
+  );
+}
+
+function isAuthenticatorAssertionResponse(
+  response: AuthenticatorResponse,
+): response is AuthenticatorAssertionResponse {
+  return (
+    typeof AuthenticatorAssertionResponse !== 'undefined' &&
+    response instanceof AuthenticatorAssertionResponse
+  );
+}
+
+function hasToJson(
+  credential: PublicKeyCredential,
+): credential is PublicKeyCredential & {
+  toJSON(): unknown;
+} {
+  return 'toJSON' in credential && typeof credential.toJSON === 'function';
+}
+
+function base64UrlToArrayBuffer(base64url: string): ArrayBuffer {
+  const padding = '='.repeat((4 - (base64url.length % 4)) % 4);
+  const base64 = (base64url + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+
+  const raw = atob(base64);
+  const buffer = new ArrayBuffer(raw.length);
+  const output = new Uint8Array(buffer);
+
+  for (let index = 0; index < raw.length; index += 1) {
+    output[index] = raw.charCodeAt(index);
+  }
+
+  return buffer;
+}
+
+function arrayBufferToBase64Url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+</file>
 
 <file path=".editorconfig">
 # Editor configuration, see https://editorconfig.org
@@ -637,12 +768,27 @@ export interface CurrentUser {
 </file>
 
 <file path="src/app/features/auth/pages/login-page/login-page.css">
-.page-placeholder {
-  max-width: 48rem;
-  padding: clamp(1.5rem, 4vw, 3rem);
+.login-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+}
+
+.login-card,
+.login-info {
   border: 1px solid var(--app-color-border);
   border-radius: 1.5rem;
   background: var(--app-color-surface);
+}
+
+.login-card {
+  max-width: 42rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+
+.login-info {
+  padding: clamp(1.25rem, 3vw, 2rem);
 }
 
 .page-kicker {
@@ -654,39 +800,415 @@ export interface CurrentUser {
   text-transform: uppercase;
 }
 
-.page-placeholder h1 {
+.login-card h1,
+.login-info h2 {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 3rem);
-  line-height: 1.05;
+  color: var(--app-color-text);
+  line-height: 1.1;
 }
 
-.page-placeholder p {
-  max-width: 38rem;
+.login-card h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.login-info h2 {
+  font-size: clamp(1.35rem, 2.5vw, 1.8rem);
+}
+
+.login-description,
+.login-info p {
   margin: 1rem 0 0;
   color: var(--app-color-text-muted);
   font-size: var(--app-font-size-body);
 }
+
+.login-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.login-fieldset {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.form-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.form-field label {
+  color: var(--app-color-text);
+  font-size: var(--app-font-size-ui);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.form-field input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 0.9rem;
+  padding: 0.8rem 0.95rem;
+  background: #ffffff;
+  color: var(--app-color-text);
+  font-size: var(--app-font-size-ui);
+  outline: none;
+}
+
+.form-field input:focus {
+  border-color: #111827;
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.12);
+}
+
+.form-field input.is-invalid {
+  border-color: #dc2626;
+}
+
+.form-error {
+  margin: 0;
+  color: #dc2626;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-medium);
+}
+
+.login-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  min-width: 13rem;
+  border: 1px solid #111827;
+  border-radius: 999px;
+  padding: 0.85rem 1.25rem;
+  background: #111827;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: var(--app-font-size-ui);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.login-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.form-submit-error {
+  border: 1px solid #dc2626;
+  border-radius: 0.9rem;
+  padding: 0.8rem 0.95rem;
+  background: #fef2f2;
+}
+
+@media (max-width: 850px) {
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+
+  .login-card {
+    max-width: none;
+  }
+}
+
+.form-status {
+  margin: 0;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.9rem;
+  padding: 0.8rem 0.95rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-medium);
+}
 </file>
 
 <file path="src/app/features/auth/pages/login-page/login-page.html">
-<section class="page-placeholder">
-  <p class="page-kicker">{{ 'pages.login.kicker' | translate }}</p>
-  <h1>{{ 'pages.login.title' | translate }}</h1>
-  <p>{{ 'pages.login.description' | translate }}</p>
+<section class="login-page">
+  <div class="login-card">
+    <p class="page-kicker">{{ 'pages.login.kicker' | translate }}</p>
+
+    <h1>{{ 'pages.login.title' | translate }}</h1>
+
+    <p class="login-description">
+      {{ 'pages.login.description' | translate }}
+    </p>
+
+    <form
+      class="login-form"
+      [formGroup]="loginForm"
+      (ngSubmit)="onSubmit()"
+      novalidate
+    >
+      <fieldset class="login-fieldset" [disabled]="isFormLocked()">
+        <div class="form-field">
+          <label for="loginEmail">
+            {{ 'pages.login.form.email.label' | translate }}
+          </label>
+
+          <input
+            id="loginEmail"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            [placeholder]="'pages.login.form.email.placeholder' | translate"
+            [class.is-invalid]="isInvalid('email')"
+          />
+
+          @if (isInvalid('email')) {
+            <p class="form-error">
+              {{ 'pages.login.form.email.error' | translate }}
+            </p>
+          }
+        </div>
+
+        <button class="login-submit" type="submit" [disabled]="isFormLocked()">
+          @if (isSubmitting()) {
+            {{ 'pages.login.form.submitting' | translate }}
+          } @else {
+            {{ 'pages.login.form.submit' | translate }}
+          }
+        </button>
+      </fieldset>
+
+      @if (statusMessageKey(); as messageKey) {
+        <p class="form-status">
+          {{ messageKey | translate }}
+        </p>
+      }
+
+      @if (submitError(); as errorKey) {
+        <p class="form-error form-submit-error">
+          {{ errorKey | translate }}
+        </p>
+      }
+    </form>
+  </div>
+
+  <aside class="login-info">
+    <h2>{{ 'pages.login.passkeyInfo.title' | translate }}</h2>
+    <p>{{ 'pages.login.passkeyInfo.text' | translate }}</p>
+  </aside>
 </section>
 </file>
 
 <file path="src/app/features/auth/pages/login-page/login-page.ts">
-import { Component } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, computed, inject, signal } from '@angular/core';
+import {
+  NonNullableFormBuilder,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
+
+import type { LoginStartResponse } from '../../models/auth-api.models';
+import { AuthApiService } from '../../services/auth-api.service';
+import { AuthStateService } from '../../services/auth-state.service';
+import {
+  normalizeAuthenticationPublicKeyOptions,
+  SerializedAuthenticationCredential,
+  serializeAuthenticationCredential,
+} from '../../utils/webauthn-authentication';
+
+type LoginFormControlName = 'email';
+
+type LoginStatus =
+  | 'idle'
+  | 'preparing'
+  | 'challengeReady'
+  | 'gettingPasskey'
+  | 'passkeyReady'
+  | 'finishing'
+  | 'authenticated';
 
 @Component({
   selector: 'app-login-page',
-  imports: [TranslatePipe],
+  imports: [ReactiveFormsModule, TranslatePipe],
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
 })
-export class LoginPage {}
+export class LoginPage {
+  private readonly formBuilder = inject(NonNullableFormBuilder);
+  private readonly authApi = inject(AuthApiService);
+  private readonly authState = inject(AuthStateService);
+
+  readonly isSubmitting = signal(false);
+  readonly loginStatus = signal<LoginStatus>('idle');
+  readonly loginStartResponse = signal<LoginStartResponse | null>(null);
+  readonly loginAssertionCredential =
+    signal<SerializedAuthenticationCredential | null>(null);
+  readonly submitError = signal<string | null>(null);
+
+  readonly isAuthenticated = computed(
+    () => this.loginStatus() === 'authenticated',
+  );
+
+  readonly isFormLocked = computed(
+    () => this.isSubmitting() || this.isAuthenticated(),
+  );
+
+  readonly statusMessageKey = computed(() => {
+    switch (this.loginStatus()) {
+      case 'preparing':
+        return 'pages.login.form.messages.preparing';
+      case 'challengeReady':
+        return 'pages.login.form.messages.challengeReady';
+      case 'gettingPasskey':
+        return 'pages.login.form.messages.gettingPasskey';
+      case 'passkeyReady':
+        return 'pages.login.form.messages.passkeyReady';
+      case 'finishing':
+        return 'pages.login.form.messages.finishing';
+      case 'authenticated':
+        return 'pages.login.form.messages.authenticated';
+      default:
+        return null;
+    }
+  });
+
+  readonly loginForm = this.formBuilder.group({
+    email: [
+      '',
+      [Validators.required, Validators.email, Validators.maxLength(180)],
+    ],
+  });
+
+  isInvalid(controlName: LoginFormControlName): boolean {
+    const control = this.loginForm.controls[controlName];
+
+    return control.invalid && (control.dirty || control.touched);
+  }
+
+  async onSubmit(): Promise<void> {
+    this.loginForm.markAllAsTouched();
+    this.submitError.set(null);
+    this.loginStatus.set('idle');
+    this.loginStartResponse.set(null);
+    this.loginAssertionCredential.set(null);
+
+    if (this.loginForm.invalid || this.isFormLocked()) {
+      return;
+    }
+
+    if (!this.isWebAuthnAvailable()) {
+      this.submitError.set('pages.login.form.errors.passkeyUnsupported');
+      return;
+    }
+
+    const { email } = this.loginForm.getRawValue();
+
+    const payload = {
+      email: email.trim().toLowerCase(),
+    };
+
+    if (payload.email === '') {
+      this.submitError.set('pages.login.form.errors.invalidInput');
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    this.loginStatus.set('preparing');
+
+    try {
+      const loginStartResponse = await firstValueFrom(
+        this.authApi.loginStart(payload),
+      );
+
+      this.loginStartResponse.set(loginStartResponse);
+      this.loginStatus.set('challengeReady');
+
+      const publicKey = normalizeAuthenticationPublicKeyOptions(
+        loginStartResponse.publicKey,
+      );
+
+      this.loginStatus.set('gettingPasskey');
+
+      const credential = await navigator.credentials.get({ publicKey });
+      const serializedCredential = serializeAuthenticationCredential(credential);
+
+      this.loginAssertionCredential.set(serializedCredential);
+      this.loginStatus.set('passkeyReady');
+
+      this.loginStatus.set('finishing');
+
+      await firstValueFrom(
+        this.authApi.loginFinish({
+          email: payload.email,
+          credential: serializedCredential,
+        }),
+      );
+
+      this.authState.loadCurrentUser();
+      this.loginStatus.set('authenticated');
+    } catch (error) {
+      this.loginStatus.set('idle');
+      this.submitError.set(this.resolveLoginError(error));
+    } finally {
+      this.isSubmitting.set(false);
+    }
+  }
+
+  private isWebAuthnAvailable(): boolean {
+    return (
+      typeof window !== 'undefined' &&
+      typeof navigator !== 'undefined' &&
+      typeof navigator.credentials?.get === 'function' &&
+      typeof PublicKeyCredential !== 'undefined'
+    );
+  }
+
+  private resolveLoginError(error: unknown): string {
+    if (error instanceof DOMException) {
+      return 'pages.login.form.errors.passkeyCancelledOrFailed';
+    }
+
+    if (!(error instanceof HttpErrorResponse)) {
+      return 'pages.login.form.errors.unknown';
+    }
+
+    if (error.status === 429) {
+      return 'pages.login.form.errors.tooManyRequests';
+    }
+
+    const backendError =
+      typeof error.error?.error === 'string' ? error.error.error : '';
+
+    switch (backendError) {
+      case 'email is required':
+      case 'invalid email':
+        return 'pages.login.form.errors.invalidInput';
+
+      case 'user_not_found':
+        return 'pages.login.form.errors.userNotFound';
+
+      case 'no_passkey_registered':
+        return 'pages.login.form.errors.noPasskeyRegistered';
+
+      case 'forbidden_origin':
+        return 'pages.login.form.errors.forbiddenOrigin';
+
+      case 'missing_required_fields':
+        return 'pages.login.form.errors.missingRequiredFields';
+
+      case 'login_session_not_found':
+        return 'pages.login.form.errors.loginSessionNotFound';
+
+      case 'login_session_expired':
+        return 'pages.login.form.errors.loginSessionExpired';
+
+      case 'invalid_public_key_credential':
+      case 'invalid_assertion_response_type':
+      case 'assertion_validation_failed':
+        return 'pages.login.form.errors.assertionValidationFailed';
+
+      default:
+        return 'pages.login.form.errors.finishFailed';
+    }
+  }
+}
 </file>
 
 <file path="src/app/features/auth/README.md">
@@ -1819,14 +2341,17 @@ export type PublicKeyCredentialCreationOptionsFromServer = Omit<
   excludeCredentials?: PublicKeyCredentialDescriptorFromServer[];
 };
 
+export type PublicKeyCredentialRequestOptionsFromServer = Omit<
+  PublicKeyCredentialRequestOptions,
+  'challenge' | 'allowCredentials'
+> & {
+  challenge: string;
+  allowCredentials?: PublicKeyCredentialDescriptorFromServer[];
+};
+
 export interface RegisterStartResponse {
   publicKey: PublicKeyCredentialCreationOptionsFromServer;
   expiresAt: string;
-}
-
-export interface RegisterFinishRequest {
-  email: string;
-  credential: unknown;
 }
 
 export interface RegisterFinishRequest {
@@ -1849,7 +2374,7 @@ export interface LoginStartRequest {
 }
 
 export interface LoginStartResponse {
-  publicKey: PublicKeyCredentialRequestOptions;
+  publicKey: PublicKeyCredentialRequestOptionsFromServer;
   expiresAt: string;
 }
 
@@ -1858,7 +2383,15 @@ export interface LoginFinishRequest {
   credential: unknown;
 }
 
-export type LoginFinishResponse = CurrentUser;
+export interface LoginFinishResponse {
+  status: 'ok';
+  message: string;
+  user: {
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
 
 export interface LogoutResponse {
   status: 'ok';
@@ -1880,656 +2413,6 @@ export interface VerifyEmailResponse {
   message: string;
   messageKey?: string;
   emailVerification?: EmailVerificationStatus;
-}
-</file>
-
-<file path="src/app/features/auth/pages/register-page/register-page.css">
-.register-page {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
-  gap: clamp(1.5rem, 4vw, 3rem);
-  align-items: start;
-}
-
-.register-card,
-.register-info {
-  border: 1px solid var(--app-color-border);
-  border-radius: 1.5rem;
-  background: var(--app-color-surface);
-}
-
-.register-card {
-  max-width: 42rem;
-  padding: clamp(1.5rem, 4vw, 3rem);
-}
-
-.register-info {
-  padding: clamp(1.25rem, 3vw, 2rem);
-}
-
-.page-kicker {
-  margin: 0 0 0.75rem;
-  color: var(--app-color-text-muted);
-  font-size: var(--app-font-size-small);
-  font-weight: var(--app-font-weight-bold);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.register-card h1,
-.register-info h2 {
-  margin: 0;
-  color: var(--app-color-text);
-  line-height: 1.1;
-}
-
-.register-card h1 {
-  font-size: clamp(2rem, 4vw, 3rem);
-}
-
-.register-info h2 {
-  font-size: clamp(1.35rem, 2.5vw, 1.8rem);
-}
-
-.register-description,
-.register-info p {
-  margin: 1rem 0 0;
-  color: var(--app-color-text-muted);
-  font-size: var(--app-font-size-body);
-}
-
-.register-form {
-  display: grid;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.form-field {
-  display: grid;
-  gap: 0.4rem;
-}
-
-.form-field label {
-  color: var(--app-color-text);
-  font-size: var(--app-font-size-ui);
-  font-weight: var(--app-font-weight-bold);
-}
-
-.form-field input {
-  width: 100%;
-  border: 1px solid #d1d5db;
-  border-radius: 0.9rem;
-  padding: 0.8rem 0.95rem;
-  background: #ffffff;
-  color: var(--app-color-text);
-  font-size: var(--app-font-size-ui);
-  outline: none;
-}
-
-.form-field input:focus {
-  border-color: #111827;
-  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.12);
-}
-
-.form-field input.is-invalid {
-  border-color: #dc2626;
-}
-
-.form-error {
-  margin: 0;
-  color: #dc2626;
-  font-size: var(--app-font-size-small);
-  font-weight: var(--app-font-weight-medium);
-}
-
-.register-submit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  justify-self: start;
-  min-width: 13rem;
-  border: 1px solid #111827;
-  border-radius: 999px;
-  padding: 0.85rem 1.25rem;
-  background: #111827;
-  color: #ffffff;
-  cursor: pointer;
-  font-size: var(--app-font-size-ui);
-  font-weight: var(--app-font-weight-bold);
-}
-
-.register-submit:hover {
-  background: #1f2937;
-}
-
-.register-submit:disabled {
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-@media (max-width: 850px) {
-  .register-page {
-    grid-template-columns: 1fr;
-  }
-
-  .register-card {
-    max-width: none;
-  }
-}
-
-.form-success {
-  margin: 0;
-  border: 1px solid #16a34a;
-  border-radius: 0.9rem;
-  padding: 0.8rem 0.95rem;
-  background: #f0fdf4;
-  color: #166534;
-  font-size: var(--app-font-size-small);
-  font-weight: var(--app-font-weight-medium);
-}
-
-.form-submit-error {
-  border: 1px solid #dc2626;
-  border-radius: 0.9rem;
-  padding: 0.8rem 0.95rem;
-  background: #fef2f2;
-}
-
-.form-info {
-  margin: 0;
-  border: 1px solid #2563eb;
-  border-radius: 0.9rem;
-  padding: 0.8rem 0.95rem;
-  background: #eff6ff;
-  color: #1e40af;
-  font-size: var(--app-font-size-small);
-  font-weight: var(--app-font-weight-medium);
-}
-
-.passkey-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: grid;
-  place-items: center;
-  padding: 1rem;
-  background: rgba(17, 24, 39, 0.62);
-}
-
-.passkey-modal {
-  width: min(100%, 36rem);
-  border: 1px solid var(--app-color-border);
-  border-radius: 1.5rem;
-  padding: clamp(1.5rem, 4vw, 2rem);
-  background: #ffffff;
-  box-shadow: 0 24px 80px rgba(17, 24, 39, 0.24);
-}
-
-.passkey-modal h2 {
-  margin: 0;
-  color: var(--app-color-text);
-  font-size: clamp(1.6rem, 3vw, 2.2rem);
-  line-height: 1.1;
-}
-
-.passkey-modal-email {
-  display: inline-flex;
-  max-width: 100%;
-  margin: 1rem 0 0;
-  border: 1px solid #dbe7fe;
-  border-radius: 999px;
-  padding: 0.45rem 0.75rem;
-  background: #eff6ff;
-  color: #1e40af;
-  font-size: var(--app-font-size-small);
-  font-weight: var(--app-font-weight-bold);
-  overflow-wrap: anywhere;
-}
-
-.passkey-modal-content {
-  display: grid;
-  gap: 0.85rem;
-  margin-top: 1.25rem;
-}
-
-.passkey-modal-content p {
-  margin: 0;
-  color: var(--app-color-text-muted);
-  font-size: var(--app-font-size-body);
-  line-height: 1.55;
-}
-
-.passkey-modal-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  margin-top: 1.5rem;
-}
-
-.passkey-modal-actions button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  padding: 0.8rem 1.1rem;
-  cursor: pointer;
-  font-size: var(--app-font-size-ui);
-  font-weight: var(--app-font-weight-bold);
-}
-
-.passkey-modal-primary {
-  border: 1px solid #111827;
-  background: #111827;
-  color: #ffffff;
-}
-
-.passkey-modal-secondary {
-  border: 1px solid #bfdbfe;
-  background: #ffffff;
-  color: #1e40af;
-}
-
-.passkey-modal-actions button:disabled {
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-</file>
-
-<file path="src/app/features/auth/pages/register-page/register-page.html">
-<section class="register-page">
-  <div class="register-card">
-    <p class="page-kicker">{{ 'pages.register.kicker' | translate }}</p>
-
-    <h1>{{ 'pages.register.title' | translate }}</h1>
-
-    <p class="register-description">
-      {{ 'pages.register.description' | translate }}
-    </p>
-
-    <form
-      class="register-form"
-      [formGroup]="registerForm"
-      (ngSubmit)="onSubmit()"
-      novalidate
-    >
-      <div class="form-field">
-        <label for="firstName">
-          {{ 'pages.register.form.firstName.label' | translate }}
-        </label>
-
-        <input
-          id="firstName"
-          type="text"
-          formControlName="firstName"
-          autocomplete="given-name"
-          [placeholder]="
-            'pages.register.form.firstName.placeholder' | translate
-          "
-          [class.is-invalid]="isInvalid('firstName')"
-        />
-
-        @if (isInvalid('firstName')) {
-          <p class="form-error">
-            {{ 'pages.register.form.firstName.error' | translate }}
-          </p>
-        }
-      </div>
-
-      <div class="form-field">
-        <label for="lastName">
-          {{ 'pages.register.form.lastName.label' | translate }}
-        </label>
-
-        <input
-          id="lastName"
-          type="text"
-          formControlName="lastName"
-          autocomplete="family-name"
-          [placeholder]="
-            'pages.register.form.lastName.placeholder' | translate
-          "
-          [class.is-invalid]="isInvalid('lastName')"
-        />
-
-        @if (isInvalid('lastName')) {
-          <p class="form-error">
-            {{ 'pages.register.form.lastName.error' | translate }}
-          </p>
-        }
-      </div>
-
-      <div class="form-field">
-        <label for="email">
-          {{ 'pages.register.form.email.label' | translate }}
-        </label>
-
-        <input
-          id="email"
-          type="email"
-          formControlName="email"
-          autocomplete="email"
-          [placeholder]="'pages.register.form.email.placeholder' | translate"
-          [class.is-invalid]="isInvalid('email')"
-        />
-
-        @if (isInvalid('email')) {
-          <p class="form-error">
-            {{ 'pages.register.form.email.error' | translate }}
-          </p>
-        }
-      </div>
-
-      <button class="register-submit" type="submit" [disabled]="isSubmitting()">
-        @if (isSubmitting()) {
-          {{ 'pages.register.form.submitting' | translate }}
-        } @else {
-          {{ 'pages.register.form.submit' | translate }}
-        }
-      </button>
-
-      @switch (registrationStatus()) {
-        @case ('preparing') {
-          <p class="form-info">
-            {{ 'pages.register.form.messages.preparing' | translate }}
-          </p>
-        }
-
-        @case ('creatingPasskey') {
-          <p class="form-info">
-            {{ 'pages.register.form.messages.creatingPasskey' | translate }}
-          </p>
-        }
-
-        @case ('finishing') {
-          <p class="form-info">
-            {{ 'pages.register.form.messages.finishing' | translate }}
-          </p>
-        }
-
-        @case ('registered') {
-          <p class="form-success">
-            {{ 'pages.register.form.messages.registered' | translate }}
-          </p>
-        }
-      }
-
-      @if (submitError(); as errorKey) {
-        <p class="form-error form-submit-error">
-          {{ errorKey | translate }}
-        </p>
-      }
-    </form>
-  </div>
-
-  <aside class="register-info">
-    <h2>{{ 'pages.register.passkeyInfo.title' | translate }}</h2>
-    <p>{{ 'pages.register.passkeyInfo.text' | translate }}</p>
-  </aside>
-
-  @if (isPasskeyExplanationOpen()) {
-    <div class="passkey-modal-backdrop" role="presentation">
-      <section
-        class="passkey-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="passkeyModalTitle"
-      >
-        <p class="page-kicker">
-          {{ 'pages.register.passkeyModal.kicker' | translate }}
-        </p>
-
-        <h2 id="passkeyModalTitle">
-          {{ 'pages.register.passkeyModal.title' | translate }}
-        </h2>
-
-        <p class="passkey-modal-email">
-          {{ pendingRegistrationEmail() }}
-        </p>
-
-        <div class="passkey-modal-content">
-          <p>
-            {{ 'pages.register.passkeyModal.intro' | translate }}
-          </p>
-
-          <p>
-            {{ 'pages.register.passkeyModal.browserDialog' | translate }}
-          </p>
-
-          <p>
-            {{ 'pages.register.passkeyModal.privacy' | translate }}
-          </p>
-        </div>
-
-        @if (registrationStatus() === 'registered') {
-          <p class="form-success">
-            {{ 'pages.register.form.messages.registered' | translate }}
-          </p>
-        }
-
-        <div class="passkey-modal-actions">
-          <button
-            class="passkey-modal-secondary"
-            type="button"
-            [disabled]="isSubmitting()"
-            (click)="closePasskeyExplanation()"
-          >
-            {{ 'pages.register.passkeyModal.back' | translate }}
-          </button>
-
-          <button
-            class="passkey-modal-primary"
-            type="button"
-            [disabled]="isSubmitting()"
-            (click)="continueRegistrationWithPasskey()"
-          >
-            @if (isSubmitting()) {
-              {{ 'pages.register.form.submitting' | translate }}
-            } @else {
-              {{ 'pages.register.passkeyModal.createPasskey' | translate }}
-            }
-          </button>
-        </div>
-      </section>
-    </div>
-  }
-</section>
-</file>
-
-<file path="src/app/features/auth/pages/register-page/register-page.ts">
-import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
-import {
-  NonNullableFormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
-import { TranslatePipe } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
-
-import { RegisterFinishResponse } from '../../models/auth-api.models';
-import { AuthApiService } from '../../services/auth-api.service';
-import { AuthStateService } from '../../services/auth-state.service';
-import {
-  normalizeRegistrationPublicKeyOptions,
-  serializeRegistrationCredential,
-} from '../../utils/webauthn-registration';
-
-type RegisterFormControlName = 'firstName' | 'lastName' | 'email';
-
-type RegistrationStatus =
-  | 'idle'
-  | 'preparing'
-  | 'creatingPasskey'
-  | 'finishing'
-  | 'registered';
-
-@Component({
-  selector: 'app-register-page',
-  imports: [ReactiveFormsModule, TranslatePipe],
-  templateUrl: './register-page.html',
-  styleUrl: './register-page.css',
-})
-export class RegisterPage {
-  private readonly formBuilder = inject(NonNullableFormBuilder);
-  private readonly authApi = inject(AuthApiService);
-  private readonly authState = inject(AuthStateService);
-
-  readonly isSubmitting = signal(false);
-  readonly isPasskeyExplanationOpen = signal(false);
-  readonly registrationStatus = signal<RegistrationStatus>('idle');
-  readonly registerFinishResponse = signal<RegisterFinishResponse | null>(null);
-  readonly submitError = signal<string | null>(null);
-
-  readonly pendingRegistrationEmail = computed(() =>
-    this.registerForm.controls.email.value.trim(),
-  );
-
-  readonly registerForm = this.formBuilder.group({
-    firstName: [
-      '',
-      [Validators.required, Validators.minLength(2), Validators.maxLength(80)],
-    ],
-    lastName: [
-      '',
-      [Validators.required, Validators.minLength(2), Validators.maxLength(80)],
-    ],
-    email: [
-      '',
-      [Validators.required, Validators.email, Validators.maxLength(180)],
-    ],
-  });
-
-  isInvalid(controlName: RegisterFormControlName): boolean {
-    const control = this.registerForm.controls[controlName];
-
-    return control.invalid && (control.dirty || control.touched);
-  }
-
-  onSubmit(): void {
-    this.registerForm.markAllAsTouched();
-    this.submitError.set(null);
-    this.registerFinishResponse.set(null);
-    this.registrationStatus.set('idle');
-
-    if (this.registerForm.invalid || this.isSubmitting()) {
-      return;
-    }
-
-    this.isPasskeyExplanationOpen.set(true);
-  }
-
-  closePasskeyExplanation(): void {
-    if (this.isSubmitting()) {
-      return;
-    }
-
-    this.isPasskeyExplanationOpen.set(false);
-  }
-
-  async continueRegistrationWithPasskey(): Promise<void> {
-    this.submitError.set(null);
-    this.registerFinishResponse.set(null);
-    this.registrationStatus.set('idle');
-
-    if (this.registerForm.invalid || this.isSubmitting()) {
-      return;
-    }
-
-    if (!this.isWebAuthnAvailable()) {
-      this.submitError.set('pages.register.form.errors.passkeyUnsupported');
-      this.isPasskeyExplanationOpen.set(false);
-      return;
-    }
-
-    this.isSubmitting.set(true);
-
-    try {
-      const payload = this.registerForm.getRawValue();
-
-      this.registrationStatus.set('preparing');
-
-      const registerStartResponse = await firstValueFrom(
-        this.authApi.registerStart(payload),
-      );
-
-      this.registrationStatus.set('creatingPasskey');
-
-      const publicKey = normalizeRegistrationPublicKeyOptions(
-        registerStartResponse.publicKey,
-      );
-
-      const credential = await navigator.credentials.create({ publicKey });
-      const serializedCredential = serializeRegistrationCredential(credential);
-
-      this.registrationStatus.set('finishing');
-
-      const registerFinishResponse = await firstValueFrom(
-        this.authApi.registerFinish({
-          email: payload.email,
-          credential: serializedCredential,
-        }),
-      );
-
-      this.registerFinishResponse.set(registerFinishResponse);
-      this.authState.loadCurrentUser();
-      this.registrationStatus.set('registered');
-      this.isPasskeyExplanationOpen.set(false);
-    } catch (error) {
-      this.registrationStatus.set('idle');
-      this.submitError.set(this.toRegisterErrorKey(error));
-    } finally {
-      this.isSubmitting.set(false);
-    }
-  }
-
-  private isWebAuthnAvailable(): boolean {
-    return (
-      typeof navigator !== 'undefined' &&
-      typeof navigator.credentials !== 'undefined' &&
-      typeof PublicKeyCredential !== 'undefined'
-    );
-  }
-
-  private toRegisterErrorKey(error: unknown): string {
-    if (error instanceof DOMException) {
-      if (error.name === 'NotAllowedError') {
-        return 'pages.register.form.errors.passkeyCancelled';
-      }
-
-      if (error.name === 'InvalidStateError') {
-        return 'pages.register.form.errors.passkeyInvalidState';
-      }
-
-      return 'pages.register.form.errors.passkeyCreationFailed';
-    }
-
-    if (!(error instanceof HttpErrorResponse)) {
-      return 'pages.register.form.errors.unknown';
-    }
-
-    if (error.status === 400) {
-      return 'pages.register.form.errors.invalidInput';
-    }
-
-    if (error.status === 403) {
-      return 'pages.register.form.errors.forbiddenOrigin';
-    }
-
-    if (error.status === 404) {
-      return 'pages.register.form.errors.registrationSessionNotFound';
-    }
-
-    if (error.status === 409) {
-      return 'pages.register.form.errors.emailAlreadyRegistered';
-    }
-
-    if (error.status === 410) {
-      return 'pages.register.form.errors.registrationSessionExpired';
-    }
-
-    return 'pages.register.form.errors.finishFailed';
-  }
 }
 </file>
 
@@ -2750,6 +2633,660 @@ export const routes: Routes = [
 ];
 </file>
 
+<file path="src/app/features/auth/pages/register-page/register-page.css">
+.register-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+}
+
+.register-card,
+.register-info {
+  border: 1px solid var(--app-color-border);
+  border-radius: 1.5rem;
+  background: var(--app-color-surface);
+}
+
+.register-card {
+  max-width: 42rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+
+.register-info {
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.page-kicker {
+  margin: 0 0 0.75rem;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.register-card h1,
+.register-info h2 {
+  margin: 0;
+  color: var(--app-color-text);
+  line-height: 1.1;
+}
+
+.register-card h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.register-info h2 {
+  font-size: clamp(1.35rem, 2.5vw, 1.8rem);
+}
+
+.register-description,
+.register-info p {
+  margin: 1rem 0 0;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-body);
+}
+
+.register-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.form-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.form-field label {
+  color: var(--app-color-text);
+  font-size: var(--app-font-size-ui);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.form-field input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 0.9rem;
+  padding: 0.8rem 0.95rem;
+  background: #ffffff;
+  color: var(--app-color-text);
+  font-size: var(--app-font-size-ui);
+  outline: none;
+}
+
+.form-field input:focus {
+  border-color: #111827;
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.12);
+}
+
+.form-field input.is-invalid {
+  border-color: #dc2626;
+}
+
+.form-error {
+  margin: 0;
+  color: #dc2626;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-medium);
+}
+
+.register-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  min-width: 13rem;
+  border: 1px solid #111827;
+  border-radius: 999px;
+  padding: 0.85rem 1.25rem;
+  background: #111827;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: var(--app-font-size-ui);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.register-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+@media (max-width: 850px) {
+  .register-page {
+    grid-template-columns: 1fr;
+  }
+
+  .register-card {
+    max-width: none;
+  }
+}
+
+.form-success {
+  margin: 0;
+  border: 1px solid #16a34a;
+  border-radius: 0.9rem;
+  padding: 0.8rem 0.95rem;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-medium);
+}
+
+.form-submit-error {
+  border: 1px solid #dc2626;
+  border-radius: 0.9rem;
+  padding: 0.8rem 0.95rem;
+  background: #fef2f2;
+}
+
+.form-info {
+  margin: 0;
+  border: 1px solid #2563eb;
+  border-radius: 0.9rem;
+  padding: 0.8rem 0.95rem;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-medium);
+}
+
+.passkey-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(17, 24, 39, 0.62);
+}
+
+.passkey-modal {
+  width: min(100%, 36rem);
+  border: 1px solid var(--app-color-border);
+  border-radius: 1.5rem;
+  padding: clamp(1.5rem, 4vw, 2rem);
+  background: #ffffff;
+  box-shadow: 0 24px 80px rgba(17, 24, 39, 0.24);
+}
+
+.passkey-modal h2 {
+  margin: 0;
+  color: var(--app-color-text);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  line-height: 1.1;
+}
+
+.passkey-modal-email {
+  display: inline-flex;
+  max-width: 100%;
+  margin: 1rem 0 0;
+  border: 1px solid #dbe7fe;
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.passkey-modal-content {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1.25rem;
+}
+
+.passkey-modal-content p {
+  margin: 0;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-body);
+  line-height: 1.55;
+}
+
+.passkey-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.passkey-modal-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.8rem 1.1rem;
+  cursor: pointer;
+  font-size: var(--app-font-size-ui);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.passkey-modal-primary {
+  border: 1px solid #111827;
+  background: #111827;
+  color: #ffffff;
+}
+
+.passkey-modal-secondary {
+  border: 1px solid #bfdbfe;
+  background: #ffffff;
+  color: #1e40af;
+}
+
+.passkey-modal-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.register-fieldset {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+</file>
+
+<file path="src/app/features/auth/pages/register-page/register-page.html">
+<section class="register-page">
+  <div class="register-card">
+    <p class="page-kicker">{{ 'pages.register.kicker' | translate }}</p>
+
+    <h1>{{ 'pages.register.title' | translate }}</h1>
+
+    <p class="register-description">
+      {{ 'pages.register.description' | translate }}
+    </p>
+
+    <form
+      class="register-form"
+      [formGroup]="registerForm"
+      (ngSubmit)="onSubmit()"
+      novalidate
+    >
+    <fieldset class="register-fieldset" [disabled]="isFormLocked()">
+      <div class="form-field">
+        <label for="firstName">
+          {{ 'pages.register.form.firstName.label' | translate }}
+        </label>
+
+        <input
+          id="firstName"
+          type="text"
+          formControlName="firstName"
+          autocomplete="given-name"
+          [placeholder]="
+            'pages.register.form.firstName.placeholder' | translate
+          "
+          [class.is-invalid]="isInvalid('firstName')"
+        />
+
+        @if (isInvalid('firstName')) {
+          <p class="form-error">
+            {{ 'pages.register.form.firstName.error' | translate }}
+          </p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="lastName">
+          {{ 'pages.register.form.lastName.label' | translate }}
+        </label>
+
+        <input
+          id="lastName"
+          type="text"
+          formControlName="lastName"
+          autocomplete="family-name"
+          [placeholder]="
+            'pages.register.form.lastName.placeholder' | translate
+          "
+          [class.is-invalid]="isInvalid('lastName')"
+        />
+
+        @if (isInvalid('lastName')) {
+          <p class="form-error">
+            {{ 'pages.register.form.lastName.error' | translate }}
+          </p>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="email">
+          {{ 'pages.register.form.email.label' | translate }}
+        </label>
+
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          autocomplete="email"
+          [placeholder]="'pages.register.form.email.placeholder' | translate"
+          [class.is-invalid]="isInvalid('email')"
+        />
+
+        @if (isInvalid('email')) {
+          <p class="form-error">
+            {{ 'pages.register.form.email.error' | translate }}
+          </p>
+        }
+      </div>
+
+      <button class="register-submit" type="submit" [disabled]="isFormLocked()">
+        @if (isSubmitting()) {
+          {{ 'pages.register.form.submitting' | translate }}
+        } @else {
+          {{ 'pages.register.form.submit' | translate }}
+        }
+      </button>
+    </fieldset>
+
+      @if (isRegistered()) {
+        <p class="form-success">
+          {{ 'pages.register.form.messages.registered' | translate }}
+        </p>
+      }
+
+      @if (submitError(); as errorKey) {
+        <p class="form-error form-submit-error">
+          {{ errorKey | translate }}
+        </p>
+      }
+
+    </form>
+  </div>
+
+  <aside class="register-info">
+    <h2>{{ 'pages.register.passkeyInfo.title' | translate }}</h2>
+    <p>{{ 'pages.register.passkeyInfo.text' | translate }}</p>
+  </aside>
+
+  @if (isPasskeyExplanationOpen()) {
+    <div class="passkey-modal-backdrop" role="presentation">
+      <section
+        class="passkey-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="passkeyModalTitle"
+      >
+        <p class="page-kicker">
+          {{ 'pages.register.passkeyModal.kicker' | translate }}
+        </p>
+
+        <h2 id="passkeyModalTitle">
+          {{ 'pages.register.passkeyModal.title' | translate }}
+        </h2>
+
+        <p class="passkey-modal-email">
+          {{ pendingRegistrationEmail() }}
+        </p>
+
+        <div class="passkey-modal-content">
+          <p>
+            {{ 'pages.register.passkeyModal.intro' | translate }}
+          </p>
+
+          <p>
+            {{ 'pages.register.passkeyModal.browserDialog' | translate }}
+          </p>
+
+          <p>
+            {{ 'pages.register.passkeyModal.privacy' | translate }}
+          </p>
+        </div>
+
+        @switch (registrationStatus()) {
+          @case ('preparing') {
+            <p class="form-info">
+              {{ 'pages.register.form.messages.preparing' | translate }}
+            </p>
+          }
+
+          @case ('creatingPasskey') {
+            <p class="form-info">
+              {{ 'pages.register.form.messages.creatingPasskey' | translate }}
+            </p>
+          }
+
+          @case ('finishing') {
+            <p class="form-info">
+              {{ 'pages.register.form.messages.finishing' | translate }}
+            </p>
+          }
+        }
+
+        <div class="passkey-modal-actions">
+          <button
+            class="passkey-modal-secondary"
+            type="button"
+            [disabled]="isSubmitting()"
+            (click)="closePasskeyExplanation()"
+          >
+            {{ 'pages.register.passkeyModal.back' | translate }}
+          </button>
+
+          <button
+            class="passkey-modal-primary"
+            type="button"
+            [disabled]="isSubmitting()"
+            (click)="continueRegistrationWithPasskey()"
+          >
+            @if (isSubmitting()) {
+              {{ 'pages.register.form.submitting' | translate }}
+            } @else {
+              {{ 'pages.register.passkeyModal.createPasskey' | translate }}
+            }
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</section>
+</file>
+
+<file path="src/app/features/auth/pages/register-page/register-page.ts">
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, computed, inject, signal } from '@angular/core';
+import {
+  NonNullableFormBuilder,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
+
+import { AuthApiService } from '../../services/auth-api.service';
+import { AuthStateService } from '../../services/auth-state.service';
+import {
+  normalizeRegistrationPublicKeyOptions,
+  serializeRegistrationCredential,
+} from '../../utils/webauthn-registration';
+
+type RegisterFormControlName = 'firstName' | 'lastName' | 'email';
+
+type RegistrationStatus =
+  | 'idle'
+  | 'preparing'
+  | 'creatingPasskey'
+  | 'finishing'
+  | 'registered';
+
+@Component({
+  selector: 'app-register-page',
+  imports: [ReactiveFormsModule, TranslatePipe],
+  templateUrl: './register-page.html',
+  styleUrl: './register-page.css',
+})
+export class RegisterPage {
+  private readonly formBuilder = inject(NonNullableFormBuilder);
+  private readonly authApi = inject(AuthApiService);
+  private readonly authState = inject(AuthStateService);
+
+  readonly isSubmitting = signal(false);
+  readonly isPasskeyExplanationOpen = signal(false);
+  readonly registrationStatus = signal<RegistrationStatus>('idle');
+  readonly submitError = signal<string | null>(null);
+
+  readonly isRegistered = computed(
+    () => this.registrationStatus() === 'registered',
+  );
+
+  readonly isFormLocked = computed(
+    () => this.isSubmitting() || this.isRegistered(),
+  );
+
+  readonly pendingRegistrationEmail = computed(() =>
+    this.registerForm.controls.email.value.trim(),
+  );
+
+  readonly registerForm = this.formBuilder.group({
+    firstName: [
+      '',
+      [Validators.required, Validators.minLength(2), Validators.maxLength(80)],
+    ],
+    lastName: [
+      '',
+      [Validators.required, Validators.minLength(2), Validators.maxLength(80)],
+    ],
+    email: [
+      '',
+      [Validators.required, Validators.email, Validators.maxLength(180)],
+    ],
+  });
+
+  isInvalid(controlName: RegisterFormControlName): boolean {
+    const control = this.registerForm.controls[controlName];
+
+    return control.invalid && (control.dirty || control.touched);
+  }
+
+  onSubmit(): void {
+    this.registerForm.markAllAsTouched();
+    this.submitError.set(null);
+    this.registrationStatus.set('idle');
+
+    if (this.registerForm.invalid || this.isFormLocked()) {
+      return;
+    }
+
+    this.isPasskeyExplanationOpen.set(true);
+  }
+
+  closePasskeyExplanation(): void {
+    if (this.isSubmitting()) {
+      return;
+    }
+
+    this.isPasskeyExplanationOpen.set(false);
+  }
+
+  async continueRegistrationWithPasskey(): Promise<void> {
+    this.submitError.set(null);
+    this.registrationStatus.set('idle');
+
+    if (this.registerForm.invalid || this.isFormLocked()) {
+      return;
+    }
+
+    if (!this.isWebAuthnAvailable()) {
+      this.submitError.set('pages.register.form.errors.passkeyUnsupported');
+      this.isPasskeyExplanationOpen.set(false);
+      return;
+    }
+
+    this.isSubmitting.set(true);
+
+    try {
+      const payload = this.registerForm.getRawValue();
+
+      this.registrationStatus.set('preparing');
+
+      const registerStartResponse = await firstValueFrom(
+        this.authApi.registerStart(payload),
+      );
+
+      this.registrationStatus.set('creatingPasskey');
+
+      const publicKey = normalizeRegistrationPublicKeyOptions(
+        registerStartResponse.publicKey,
+      );
+
+      const credential = await navigator.credentials.create({ publicKey });
+      const serializedCredential = serializeRegistrationCredential(credential);
+
+      this.registrationStatus.set('finishing');
+
+      await firstValueFrom(
+        this.authApi.registerFinish({
+          email: payload.email,
+          credential: serializedCredential,
+        }),
+      );
+
+      this.authState.loadCurrentUser();
+      this.registrationStatus.set('registered');
+      this.isPasskeyExplanationOpen.set(false);
+    } catch (error) {
+      this.registrationStatus.set('idle');
+      this.submitError.set(this.toRegisterErrorKey(error));
+    } finally {
+      this.isSubmitting.set(false);
+    }
+  }
+
+  private isWebAuthnAvailable(): boolean {
+    return (
+      typeof navigator !== 'undefined' &&
+      typeof navigator.credentials !== 'undefined' &&
+      typeof PublicKeyCredential !== 'undefined'
+    );
+  }
+
+  private toRegisterErrorKey(error: unknown): string {
+    if (error instanceof DOMException) {
+      if (error.name === 'NotAllowedError') {
+        return 'pages.register.form.errors.passkeyCancelled';
+      }
+
+      if (error.name === 'InvalidStateError') {
+        return 'pages.register.form.errors.passkeyInvalidState';
+      }
+
+      return 'pages.register.form.errors.passkeyCreationFailed';
+    }
+
+    if (!(error instanceof HttpErrorResponse)) {
+      return 'pages.register.form.errors.unknown';
+    }
+
+    if (error.status === 400) {
+      return 'pages.register.form.errors.invalidInput';
+    }
+
+    if (error.status === 403) {
+      return 'pages.register.form.errors.forbiddenOrigin';
+    }
+
+    if (error.status === 404) {
+      return 'pages.register.form.errors.registrationSessionNotFound';
+    }
+
+    if (error.status === 409) {
+      return 'pages.register.form.errors.emailAlreadyRegistered';
+    }
+
+    if (error.status === 410) {
+      return 'pages.register.form.errors.registrationSessionExpired';
+    }
+
+    return 'pages.register.form.errors.finishFailed';
+  }
+}
+</file>
+
 <file path="src/app/layout/header/header.css">
 .app-header {
   display: grid;
@@ -2881,12 +3418,15 @@ export const routes: Routes = [
   gap: 0.35rem;
 }
 
-.auth-links .auth-primary {
+.auth-links:not(:has(a.auth-active)) .auth-primary,
+.auth-links a.auth-active {
+  border-color: #111827;
   background: #111827;
   color: #ffffff;
 }
 
-.auth-links .auth-primary:hover {
+.auth-links:not(:has(a.auth-active)) .auth-primary:hover,
+.auth-links a.auth-active:hover {
   background: #1f2937;
   color: #ffffff;
 }
@@ -2976,7 +3516,44 @@ export const routes: Routes = [
     "login": {
       "kicker": "Anmeldung",
       "title": "Bei DeutschLabor anmelden",
-      "description": "Hier entsteht die Anmeldung mit Passkey."
+      "description": "Melde dich mit deiner E-Mail und deinem Passkey an.",
+      "form": {
+        "email": {
+          "label": "E-Mail",
+          "placeholder": "name@example.com",
+          "error": "Bitte gib eine gültige E-Mail-Adresse ein."
+        },
+        "submit": "Mit Passkey anmelden",
+        "submitting": "Anmeldung wird vorbereitet...",
+        "messages": {
+          "preparing": "Login-Challenge wird vom Server angefordert...",
+          "challengeReady": "Login-Challenge wurde empfangen.",
+          "gettingPasskey": "Der Browser fordert deinen Passkey an...",
+          "passkeyReady": "Der Passkey wurde bestätigt.",
+          "finishing": "Login wird auf dem Server abgeschlossen...",
+          "authenticated": "Du bist jetzt bei DeutschLabor angemeldet."
+        },
+        "errors": {
+          "invalidInput": "Bitte überprüfe deine Eingabe.",
+          "userNotFound": "Für diese E-Mail wurde kein Konto gefunden.",
+          "noPasskeyRegistered": "Für dieses Konto ist kein Passkey registriert.",
+          "forbiddenOrigin": "Dieser Ursprung ist für den Login nicht erlaubt.",
+          "missingRequiredFields": "Die Login-Daten sind unvollständig.",
+          "loginSessionNotFound": "Die Login-Sitzung wurde nicht gefunden. Starte den Login erneut.",
+          "loginSessionExpired": "Die Login-Sitzung ist abgelaufen. Starte den Login erneut.",
+          "assertionValidationFailed": "Die Passkey-Bestätigung konnte nicht geprüft werden.",
+          "passkeyUnsupported": "Dieser Browser unterstützt keine Passkeys.",
+          "passkeyCancelledOrFailed": "Der Passkey wurde nicht bestätigt oder der Vorgang wurde abgebrochen.",
+          "tooManyRequests": "Zu viele Versuche. Bitte warte kurz und versuche es später erneut.",
+          "startFailed": "Der Login konnte nicht vorbereitet werden.",
+          "finishFailed": "Der Login konnte nicht abgeschlossen werden.",
+          "unknown": "Ein unbekannter Fehler ist aufgetreten."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Wie funktioniert der Login?",
+        "text": "Zuerst gibst du deine E-Mail ein. Danach fordert der Browser deinen Passkey an. Nach erfolgreicher Bestätigung erstellt der Server deine Sitzung."
+      }
     },
     "register": {
       "kicker": "Registrierung",
@@ -3077,7 +3654,44 @@ export const routes: Routes = [
     "login": {
       "kicker": "Login",
       "title": "Log in to DeutschLabor",
-      "description": "This will become the passkey login page."
+      "description": "Log in with your email and passkey.",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Please enter a valid email address."
+        },
+        "submit": "Log in with passkey",
+        "submitting": "Preparing login...",
+        "messages": {
+          "preparing": "Requesting login challenge from the server...",
+          "challengeReady": "Login challenge was received.",
+          "gettingPasskey": "The browser is requesting your passkey...",
+          "passkeyReady": "Passkey was confirmed.",
+          "finishing": "Finishing login on the server...",
+          "authenticated": "You are now logged in to DeutschLabor."
+        },
+        "errors": {
+          "invalidInput": "Please check your input.",
+          "userNotFound": "No account was found for this email address.",
+          "noPasskeyRegistered": "No passkey is registered for this account.",
+          "forbiddenOrigin": "This origin is not allowed for login.",
+          "missingRequiredFields": "The login data is incomplete.",
+          "loginSessionNotFound": "The login session was not found. Start login again.",
+          "loginSessionExpired": "The login session has expired. Start login again.",
+          "assertionValidationFailed": "The passkey confirmation could not be verified.",
+          "passkeyUnsupported": "This browser does not support passkeys.",
+          "passkeyCancelledOrFailed": "The passkey was not confirmed or the action was cancelled.",
+          "tooManyRequests": "Too many attempts. Please wait and try again later.",
+          "startFailed": "Login could not be prepared.",
+          "finishFailed": "Login could not be completed.",
+          "unknown": "An unknown error occurred."
+        }
+      },
+      "passkeyInfo": {
+        "title": "How does login work?",
+        "text": "First enter your email. Then the browser asks for your passkey. After successful confirmation, the server creates your session."
+      }
     },
     "register": {
       "kicker": "Registration",
@@ -3178,7 +3792,44 @@ export const routes: Routes = [
     "login": {
       "kicker": "Belépés",
       "title": "Belépés a DeutschLaborba",
-      "description": "Itt készül a passkey-alapú belépési oldal."
+      "description": "Lépj be emaillel és passkey segítségével.",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Adj meg egy érvényes email-címet."
+        },
+        "submit": "Belépés passkey-vel",
+        "submitting": "Belépés előkészítése...",
+        "messages": {
+          "preparing": "Login challenge lekérése a szervertől...",
+          "challengeReady": "A login challenge megérkezett.",
+          "gettingPasskey": "A böngésző kéri a passkey-t...",
+          "passkeyReady": "A passkey megerősítve.",
+          "finishing": "Belépés befejezése a szerveren...",
+          "authenticated": "Most már be vagy jelentkezve a DeutschLaborba."
+        },
+        "errors": {
+          "invalidInput": "Ellenőrizd a megadott adatokat.",
+          "userNotFound": "Ehhez az email-címhez nem található fiók.",
+          "noPasskeyRegistered": "Ehhez a fiókhoz még nincs passkey regisztrálva.",
+          "forbiddenOrigin": "Ez az origin nem engedélyezett a belépéshez.",
+          "missingRequiredFields": "A belépési adatok hiányosak.",
+          "loginSessionNotFound": "A login session nem található. Indítsd újra a belépést.",
+          "loginSessionExpired": "A login session lejárt. Indítsd újra a belépést.",
+          "assertionValidationFailed": "A passkey megerősítését nem sikerült ellenőrizni.",
+          "passkeyUnsupported": "Ez a böngésző nem támogatja a passkey használatát.",
+          "passkeyCancelledOrFailed": "A passkey nincs megerősítve, vagy a művelet meg lett szakítva.",
+          "tooManyRequests": "Túl sok próbálkozás. Várj egy kicsit, majd próbáld újra.",
+          "startFailed": "A belépés előkészítése nem sikerült.",
+          "finishFailed": "A belépést nem sikerült befejezni.",
+          "unknown": "Ismeretlen hiba történt."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Hogyan működik a belépés?",
+        "text": "Először megadod az emailedet. Ezután a böngésző kéri a passkey-t. Sikeres megerősítés után a szerver létrehozza a munkamenetedet."
+      }
     },
     "register": {
       "kicker": "Regisztráció",
@@ -3279,7 +3930,44 @@ export const routes: Routes = [
     "login": {
       "kicker": "Logowanie",
       "title": "Zaloguj się do DeutschLabor",
-      "description": "Tutaj powstanie strona logowania przez passkey."
+      "description": "Zaloguj się za pomocą emaila i passkey.",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Podaj prawidłowy adres email."
+        },
+        "submit": "Zaloguj się z passkey",
+        "submitting": "Przygotowywanie logowania...",
+        "messages": {
+          "preparing": "Pobieranie login challenge z serwera...",
+          "challengeReady": "Login challenge został odebrany.",
+          "gettingPasskey": "Przeglądarka prosi o twój passkey...",
+          "passkeyReady": "Passkey został potwierdzony.",
+          "finishing": "Kończenie logowania na serwerze...",
+          "authenticated": "Jesteś teraz zalogowany w DeutschLabor."
+        },
+        "errors": {
+          "invalidInput": "Sprawdź wprowadzone dane.",
+          "userNotFound": "Nie znaleziono konta dla tego adresu email.",
+          "noPasskeyRegistered": "Dla tego konta nie zarejestrowano jeszcze passkey.",
+          "forbiddenOrigin": "Ten origin nie jest dozwolony dla logowania.",
+          "missingRequiredFields": "Dane logowania są niepełne.",
+          "loginSessionNotFound": "Nie znaleziono sesji logowania. Rozpocznij logowanie ponownie.",
+          "loginSessionExpired": "Sesja logowania wygasła. Rozpocznij logowanie ponownie.",
+          "assertionValidationFailed": "Nie udało się zweryfikować potwierdzenia passkey.",
+          "passkeyUnsupported": "Ta przeglądarka nie obsługuje passkey.",
+          "passkeyCancelledOrFailed": "Passkey nie został potwierdzony albo akcja została anulowana.",
+          "tooManyRequests": "Zbyt wiele prób. Poczekaj i spróbuj ponownie później.",
+          "startFailed": "Nie udało się przygotować logowania.",
+          "finishFailed": "Nie udało się zakończyć logowania.",
+          "unknown": "Wystąpił nieznany błąd."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Jak działa logowanie?",
+        "text": "Najpierw wpisujesz email. Następnie przeglądarka poprosi o twój passkey. Po udanym potwierdzeniu serwer utworzy twoją sesję."
+      }
     },
     "register": {
       "kicker": "Rejestracja",
@@ -3380,7 +4068,44 @@ export const routes: Routes = [
     "login": {
       "kicker": "Вход",
       "title": "Войти в DeutschLabor",
-      "description": "Здесь будет страница входа через passkey."
+      "description": "Войди с помощью email и passkey.",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Введи правильный email-адрес."
+        },
+        "submit": "Войти с passkey",
+        "submitting": "Подготовка входа...",
+        "messages": {
+          "preparing": "Запрашиваем login challenge у сервера...",
+          "challengeReady": "Login challenge получен.",
+          "gettingPasskey": "Браузер запрашивает твой passkey...",
+          "passkeyReady": "Passkey подтверждён.",
+          "finishing": "Завершаем вход на сервере...",
+          "authenticated": "Ты вошёл в DeutschLabor."
+        },
+        "errors": {
+          "invalidInput": "Проверь введённые данные.",
+          "userNotFound": "Аккаунт с этим email не найден.",
+          "noPasskeyRegistered": "Для этого аккаунта ещё не зарегистрирован passkey.",
+          "forbiddenOrigin": "Этот origin не разрешён для входа.",
+          "missingRequiredFields": "Данные для входа неполные.",
+          "loginSessionNotFound": "Login session не найдена. Начни вход заново.",
+          "loginSessionExpired": "Login session истекла. Начни вход заново.",
+          "assertionValidationFailed": "Не удалось проверить passkey-подтверждение.",
+          "passkeyUnsupported": "Этот браузер не поддерживает passkey.",
+          "passkeyCancelledOrFailed": "Passkey не подтверждён или действие отменено.",
+          "tooManyRequests": "Слишком много попыток. Подожди и попробуй позже.",
+          "startFailed": "Не удалось подготовить вход.",
+          "finishFailed": "Не удалось завершить вход.",
+          "unknown": "Произошла неизвестная ошибка."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Как работает вход?",
+        "text": "Сначала ты вводишь email. Затем браузер запрашивает твой passkey. После успешного подтверждения сервер создаёт твою сессию."
+      }
     },
     "register": {
       "kicker": "Регистрация",
@@ -3481,7 +4206,44 @@ export const routes: Routes = [
     "login": {
       "kicker": "Вхід",
       "title": "Увійти в DeutschLabor",
-      "description": "Тут буде сторінка входу через passkey."
+      "description": "Увійди за допомогою email і passkey.",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Введи правильну email-адресу."
+        },
+        "submit": "Увійти з passkey",
+        "submitting": "Підготовка входу...",
+        "messages": {
+          "preparing": "Запитуємо login challenge у сервера...",
+          "challengeReady": "Login challenge отримано.",
+          "gettingPasskey": "Браузер запитує твій passkey...",
+          "passkeyReady": "Passkey підтверджено.",
+          "finishing": "Завершуємо вхід на сервері...",
+          "authenticated": "Ти увійшов у DeutschLabor."
+        },
+        "errors": {
+          "invalidInput": "Перевір введені дані.",
+          "userNotFound": "Обліковий запис з цим email не знайдено.",
+          "noPasskeyRegistered": "Для цього облікового запису ще не зареєстровано passkey.",
+          "forbiddenOrigin": "Цей origin не дозволений для входу.",
+          "missingRequiredFields": "Дані для входу неповні.",
+          "loginSessionNotFound": "Login session не знайдено. Почни вхід заново.",
+          "loginSessionExpired": "Login session закінчилась. Почни вхід заново.",
+          "assertionValidationFailed": "Не вдалося перевірити passkey-підтвердження.",
+          "passkeyUnsupported": "Цей браузер не підтримує passkey.",
+          "passkeyCancelledOrFailed": "Passkey не підтверджено або дію скасовано.",
+          "tooManyRequests": "Забагато спроб. Почекай і спробуй пізніше.",
+          "startFailed": "Не вдалося підготувати вхід.",
+          "finishFailed": "Не вдалося завершити вхід.",
+          "unknown": "Сталася невідома помилка."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Як працює вхід?",
+        "text": "Спочатку ти вводиш email. Потім браузер запитує твій passkey. Після успішного підтвердження сервер створює твою сесію."
+      }
     },
     "register": {
       "kicker": "Реєстрація",
@@ -3623,11 +4385,20 @@ export class App implements OnInit {
     </div>
 
     <div class="auth-links">
-      <a [routerLink]="localizedPath('login')">
+      <a
+        [routerLink]="localizedPath('login')"
+        routerLinkActive="auth-active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
         {{ 'auth.login' | translate }}
       </a>
 
-      <a class="auth-primary" [routerLink]="localizedPath('register')">
+      <a
+        class="auth-primary"
+        [routerLink]="localizedPath('register')"
+        routerLinkActive="auth-active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
         {{ 'auth.register' | translate }}
       </a>
     </div>

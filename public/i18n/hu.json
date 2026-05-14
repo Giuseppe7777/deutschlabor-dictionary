@@ -36,7 +36,44 @@
     "login": {
       "kicker": "Belépés",
       "title": "Belépés a DeutschLaborba",
-      "description": "Itt készül a passkey-alapú belépési oldal."
+      "description": "Lépj be emaillel és passkey segítségével.",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Adj meg egy érvényes email-címet."
+        },
+        "submit": "Belépés passkey-vel",
+        "submitting": "Belépés előkészítése...",
+        "messages": {
+          "preparing": "Login challenge lekérése a szervertől...",
+          "challengeReady": "A login challenge megérkezett.",
+          "gettingPasskey": "A böngésző kéri a passkey-t...",
+          "passkeyReady": "A passkey megerősítve.",
+          "finishing": "Belépés befejezése a szerveren...",
+          "authenticated": "Most már be vagy jelentkezve a DeutschLaborba."
+        },
+        "errors": {
+          "invalidInput": "Ellenőrizd a megadott adatokat.",
+          "userNotFound": "Ehhez az email-címhez nem található fiók.",
+          "noPasskeyRegistered": "Ehhez a fiókhoz még nincs passkey regisztrálva.",
+          "forbiddenOrigin": "Ez az origin nem engedélyezett a belépéshez.",
+          "missingRequiredFields": "A belépési adatok hiányosak.",
+          "loginSessionNotFound": "A login session nem található. Indítsd újra a belépést.",
+          "loginSessionExpired": "A login session lejárt. Indítsd újra a belépést.",
+          "assertionValidationFailed": "A passkey megerősítését nem sikerült ellenőrizni.",
+          "passkeyUnsupported": "Ez a böngésző nem támogatja a passkey használatát.",
+          "passkeyCancelledOrFailed": "A passkey nincs megerősítve, vagy a művelet meg lett szakítva.",
+          "tooManyRequests": "Túl sok próbálkozás. Várj egy kicsit, majd próbáld újra.",
+          "startFailed": "A belépés előkészítése nem sikerült.",
+          "finishFailed": "A belépést nem sikerült befejezni.",
+          "unknown": "Ismeretlen hiba történt."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Hogyan működik a belépés?",
+        "text": "Először megadod az emailedet. Ezután a böngésző kéri a passkey-t. Sikeres megerősítés után a szerver létrehozza a munkamenetedet."
+      }
     },
     "register": {
       "kicker": "Regisztráció",

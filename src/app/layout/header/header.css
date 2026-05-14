@@ -128,14 +128,60 @@
   gap: 0.35rem;
 }
 
-.auth-links .auth-primary {
+.auth-links:not(:has(a.auth-active)) .auth-primary,
+.auth-links a.auth-active {
+  border-color: #111827;
   background: #111827;
   color: #ffffff;
 }
 
-.auth-links .auth-primary:hover {
+.auth-links:not(:has(a.auth-active)) .auth-primary:hover,
+.auth-links a.auth-active:hover {
   background: #1f2937;
   color: #ffffff;
+}
+
+.user-area {
+  display: flex;
+  align-items: center;
+}
+
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  max-width: 18rem;
+  border: 1px solid #b6cefa;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem 0.35rem 0.35rem;
+  color: #111827;
+  text-decoration: none;
+  font-size: var(--app-font-size-ui);
+  font-weight: var(--app-font-weight-medium);
+}
+
+.user-chip:hover {
+  border-color: #dbe7fe;
+  background: #dbe7fe;
+}
+
+.user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: var(--app-font-weight-bold);
+}
+
+.user-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 900px) {
@@ -178,7 +224,8 @@
   }
 
   .main-nav a,
-  .auth-links a {
+  .auth-links a,
+  .user-chip {
     min-width: auto;
   }
 }

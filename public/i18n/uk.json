@@ -36,7 +36,44 @@
     "login": {
       "kicker": "Вхід",
       "title": "Увійти в DeutschLabor",
-      "description": "Тут буде сторінка входу через passkey."
+      "description": "Увійди за допомогою email і passkey.",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Введи правильну email-адресу."
+        },
+        "submit": "Увійти з passkey",
+        "submitting": "Підготовка входу...",
+        "messages": {
+          "preparing": "Запитуємо login challenge у сервера...",
+          "challengeReady": "Login challenge отримано.",
+          "gettingPasskey": "Браузер запитує твій passkey...",
+          "passkeyReady": "Passkey підтверджено.",
+          "finishing": "Завершуємо вхід на сервері...",
+          "authenticated": "Ти увійшов у DeutschLabor."
+        },
+        "errors": {
+          "invalidInput": "Перевір введені дані.",
+          "userNotFound": "Обліковий запис з цим email не знайдено.",
+          "noPasskeyRegistered": "Для цього облікового запису ще не зареєстровано passkey.",
+          "forbiddenOrigin": "Цей origin не дозволений для входу.",
+          "missingRequiredFields": "Дані для входу неповні.",
+          "loginSessionNotFound": "Login session не знайдено. Почни вхід заново.",
+          "loginSessionExpired": "Login session закінчилась. Почни вхід заново.",
+          "assertionValidationFailed": "Не вдалося перевірити passkey-підтвердження.",
+          "passkeyUnsupported": "Цей браузер не підтримує passkey.",
+          "passkeyCancelledOrFailed": "Passkey не підтверджено або дію скасовано.",
+          "tooManyRequests": "Забагато спроб. Почекай і спробуй пізніше.",
+          "startFailed": "Не вдалося підготувати вхід.",
+          "finishFailed": "Не вдалося завершити вхід.",
+          "unknown": "Сталася невідома помилка."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Як працює вхід?",
+        "text": "Спочатку ти вводиш email. Потім браузер запитує твій passkey. Після успішного підтвердження сервер створює твою сесію."
+      }
     },
     "register": {
       "kicker": "Реєстрація",

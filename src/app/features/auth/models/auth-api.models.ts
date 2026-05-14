@@ -29,14 +29,17 @@ export type PublicKeyCredentialCreationOptionsFromServer = Omit<
   excludeCredentials?: PublicKeyCredentialDescriptorFromServer[];
 };
 
+export type PublicKeyCredentialRequestOptionsFromServer = Omit<
+  PublicKeyCredentialRequestOptions,
+  'challenge' | 'allowCredentials'
+> & {
+  challenge: string;
+  allowCredentials?: PublicKeyCredentialDescriptorFromServer[];
+};
+
 export interface RegisterStartResponse {
   publicKey: PublicKeyCredentialCreationOptionsFromServer;
   expiresAt: string;
-}
-
-export interface RegisterFinishRequest {
-  email: string;
-  credential: unknown;
 }
 
 export interface RegisterFinishRequest {
@@ -59,7 +62,7 @@ export interface LoginStartRequest {
 }
 
 export interface LoginStartResponse {
-  publicKey: PublicKeyCredentialRequestOptions;
+  publicKey: PublicKeyCredentialRequestOptionsFromServer;
   expiresAt: string;
 }
 
@@ -68,7 +71,15 @@ export interface LoginFinishRequest {
   credential: unknown;
 }
 
-export type LoginFinishResponse = CurrentUser;
+export interface LoginFinishResponse {
+  status: 'ok';
+  message: string;
+  user: {
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
 
 export interface LogoutResponse {
   status: 'ok';

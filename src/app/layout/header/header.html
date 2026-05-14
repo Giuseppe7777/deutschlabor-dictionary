@@ -46,14 +46,37 @@
       }
     </div>
 
-    <div class="auth-links">
-      <a [routerLink]="localizedPath('login')">
-        {{ 'auth.login' | translate }}
-      </a>
+    @if (isAuthenticated()) {
+      <div class="user-area">
+        <a class="user-chip" [routerLink]="localizedPath('account')">
+          <span class="user-avatar" aria-hidden="true">
+            {{ userInitial() }}
+          </span>
 
-      <a class="auth-primary" [routerLink]="localizedPath('register')">
-        {{ 'auth.register' | translate }}
-      </a>
-    </div>
+          <span class="user-email">
+            {{ userEmail() }}
+          </span>
+        </a>
+      </div>
+    } @else if (isAnonymous()) {
+      <div class="auth-links">
+        <a
+          [routerLink]="localizedPath('login')"
+          routerLinkActive="auth-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          {{ 'auth.login' | translate }}
+        </a>
+
+        <a
+          class="auth-primary"
+          [routerLink]="localizedPath('register')"
+          routerLinkActive="auth-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          {{ 'auth.register' | translate }}
+        </a>
+      </div>
+    }
   </div>
 </div>

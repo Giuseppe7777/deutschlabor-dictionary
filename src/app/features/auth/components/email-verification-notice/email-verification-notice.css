@@ -1,0 +1,47 @@
+:host {
+  display: block;
+}
+
+.email-verification-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  margin-top: 1rem;
+  border: 1px solid #fbbf24;
+  border-radius: 1rem;
+  padding: 0.9rem 1rem;
+  background: #fffbeb;
+  color: #78350f;
+}
+
+.notice-marker {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #111827;
+  font-size: 1rem;
+  font-weight: var(--app-font-weight-bold);
+  line-height: 1;
+}
+
+.notice-content {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.notice-content strong {
+  font-size: var(--app-font-size-ui);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.notice-content p {
+  margin: 0;
+  color: #92400e;
+  font-size: var(--app-font-size-small);
+  line-height: 1.45;
+}

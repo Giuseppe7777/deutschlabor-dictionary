@@ -15,7 +15,11 @@
   },
   "auth": {
     "login": "Log in",
-    "register": "Register"
+    "register": "Register",
+    "emailVerificationNotice": {
+      "title": "Your email is not verified yet.",
+      "message": "Check your inbox and open the verification link. Until verification, some features remain limited."
+    }
   },
   "pages": {
     "search": {

@@ -15,7 +15,11 @@
   },
   "auth": {
     "login": "Logowanie",
-    "register": "Rejestracja"
+    "register": "Rejestracja",
+    "emailVerificationNotice": {
+      "title": "Twój email nie został jeszcze potwierdzony.",
+      "message": "Sprawdź pocztę i otwórz link potwierdzający. Do czasu potwierdzenia część funkcji będzie ograniczona."
+    }
   },
   "pages": {
     "search": {

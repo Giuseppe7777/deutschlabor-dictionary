@@ -15,7 +15,11 @@
   },
   "auth": {
     "login": "Anmelden",
-    "register": "Registrieren"
+    "register": "Registrieren",
+    "emailVerificationNotice": {
+      "title": "Deine E-Mail ist noch nicht bestätigt.",
+      "message": "Prüfe dein Postfach und öffne den Bestätigungslink. Bis zur Bestätigung bleiben einige Funktionen eingeschränkt."
+    }
   },
   "pages": {
     "search": {

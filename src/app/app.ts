@@ -5,10 +5,11 @@ import { RouterOutlet } from '@angular/router';
 import { InterfaceLanguageRouteService } from './core/i18n/interface-language-route.service';
 import { AuthStateService } from './features/auth/services/auth-state.service';
 import { Header } from './layout/header/header';
+import { EmailVerificationNotice } from './features/auth/components/email-verification-notice/email-verification-notice';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Header],
+  imports: [RouterOutlet, Header, EmailVerificationNotice],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })

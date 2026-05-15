@@ -35,6 +35,10 @@ export class AuthStateService {
     () => this.state().status === 'authenticated_verified',
   );
 
+  readonly isEmailUnverified = computed(
+    () => this.state().status === 'authenticated_unverified',
+  );
+
   readonly error = computed(() => this.state().error);
 
   loadCurrentUser(): void {

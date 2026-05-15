@@ -1,0 +1,10 @@
+@if (isVisible()) {
+  <section class="email-verification-notice" role="status" aria-live="polite">
+    <div class="notice-marker" aria-hidden="true">!</div>
+
+    <div class="notice-content">
+      <strong>{{ 'auth.emailVerificationNotice.title' | translate }}</strong>
+      <p>{{ 'auth.emailVerificationNotice.message' | translate }}</p>
+    </div>
+  </section>
+}

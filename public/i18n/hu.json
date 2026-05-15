@@ -15,7 +15,11 @@
   },
   "auth": {
     "login": "Belépés",
-    "register": "Regisztráció"
+    "register": "Regisztráció",
+    "emailVerificationNotice": {
+      "title": "Az emailed még nincs megerősítve.",
+      "message": "Ellenőrizd a postafiókodat, és nyisd meg a megerősítő linket. A megerősítésig néhány funkció korlátozott marad."
+    }
   },
   "pages": {
     "search": {

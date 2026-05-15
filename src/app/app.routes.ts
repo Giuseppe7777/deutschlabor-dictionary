@@ -10,6 +10,13 @@ export const routes: Routes = [
     redirectTo: DEFAULT_INTERFACE_LANGUAGE,
   },
   {
+    path: 'verify-email',
+    loadComponent: () =>
+      import('./features/auth/pages/verify-email-page/verify-email-page').then(
+        (m) => m.VerifyEmailPage,
+      ),
+  },
+  {
     matcher: interfaceLanguageUrlMatcher,
     children: [
       {
@@ -45,6 +52,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/auth/pages/register-page/register-page').then(
             (m) => m.RegisterPage,
+          ),
+      },
+      {
+        path: 'verify-email',
+        loadComponent: () =>
+          import('./features/auth/pages/verify-email-page/verify-email-page').then(
+            (m) => m.VerifyEmailPage,
           ),
       },
     ],

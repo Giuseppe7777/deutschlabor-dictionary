@@ -140,6 +140,18 @@
         "back": "Wstecz",
         "createPasskey": "Utwórz passkey"
       }
+    },
+    "verifyEmail": {
+      "kicker": "Potwierdzenie emaila",
+      "title": "Potwierdź adres email",
+      "checking": "Sprawdzamy link potwierdzający email...",
+      "missingToken": "Link potwierdzający jest niepełny. Brakuje tokena.",
+      "success": "Email został pomyślnie potwierdzony. Pełny dostęp do DeutschLabor jest teraz aktywny.",
+      "invalidOrExpired": "Link potwierdzający jest nieprawidłowy albo wygasł. Wyślij email potwierdzający ponownie.",
+      "generalError": "Nie udało się potwierdzić emaila. Spróbuj ponownie później.",
+      "alreadyVerified": "Email był już potwierdzony. Pełny dostęp do DeutschLabor jest aktywny.",
+      "invalid": "Link potwierdzający jest nieprawidłowy. Wyślij email potwierdzający ponownie.",
+      "expired": "Link potwierdzający wygasł. Wyślij email potwierdzający ponownie."
     }
   }
 }

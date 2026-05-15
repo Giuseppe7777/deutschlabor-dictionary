@@ -140,6 +140,18 @@
         "back": "Vissza",
         "createPasskey": "Passkey létrehozása"
       }
+    },
+    "verifyEmail": {
+      "kicker": "Email megerősítés",
+      "title": "Email-cím megerősítése",
+      "checking": "Ellenőrizzük az email-megerősítő linket...",
+      "missingToken": "A megerősítő link hiányos. Hiányzik a token.",
+      "success": "Az email sikeresen meg lett erősítve. A DeutschLabor teljes hozzáférése most aktív.",
+      "invalidOrExpired": "A megerősítő link érvénytelen vagy lejárt. Küldd el újra a megerősítő emailt.",
+      "generalError": "Az emailt nem sikerült megerősíteni. Próbáld meg később.",
+      "alreadyVerified": "Az email már meg volt erősítve. A teljes DeutschLabor-hozzáférés aktív.",
+      "invalid": "A megerősítő link érvénytelen. Küldd el újra a megerősítő emailt.",
+      "expired": "A megerősítő link lejárt. Küldd el újra a megerősítő emailt."
     }
   }
 }

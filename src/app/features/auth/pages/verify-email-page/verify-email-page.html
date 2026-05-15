@@ -1,0 +1,48 @@
+<section class="verify-email-page">
+  <p class="page-kicker">{{ 'pages.verifyEmail.kicker' | translate }}</p>
+  <h1>{{ 'pages.verifyEmail.title' | translate }}</h1>
+
+  @switch (status()) {
+    @case ('checking') {
+      <p class="verify-email-message">
+        {{ 'pages.verifyEmail.checking' | translate }}
+      </p>
+    }
+
+    @case ('success') {
+      <p class="verify-email-message is-success">
+        {{ 'pages.verifyEmail.success' | translate }}
+      </p>
+    }
+
+    @case ('already_verified') {
+      <p class="verify-email-message is-success">
+        {{ 'pages.verifyEmail.alreadyVerified' | translate }}
+      </p>
+    }
+
+    @case ('missing_token') {
+      <p class="verify-email-message is-error">
+        {{ 'pages.verifyEmail.missingToken' | translate }}
+      </p>
+    }
+
+    @case ('invalid') {
+      <p class="verify-email-message is-error">
+        {{ 'pages.verifyEmail.invalid' | translate }}
+      </p>
+    }
+
+    @case ('expired') {
+      <p class="verify-email-message is-error">
+        {{ 'pages.verifyEmail.expired' | translate }}
+      </p>
+    }
+
+    @case ('error') {
+      <p class="verify-email-message is-error">
+        {{ 'pages.verifyEmail.generalError' | translate }}
+      </p>
+    }
+  }
+</section>

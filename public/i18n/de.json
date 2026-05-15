@@ -140,6 +140,18 @@
         "back": "Zurück",
         "createPasskey": "Passkey erstellen"
       }
+    },
+    "verifyEmail": {
+      "kicker": "E-Mail-Bestätigung",
+      "title": "E-Mail-Adresse bestätigen",
+      "checking": "Der Bestätigungslink wird geprüft...",
+      "missingToken": "Der Bestätigungslink ist unvollständig. Das Token fehlt.",
+      "success": "Deine E-Mail wurde erfolgreich bestätigt. Der volle Zugriff auf DeutschLabor ist jetzt aktiv.",
+      "invalidOrExpired": "Der Bestätigungslink ist ungültig oder abgelaufen. Sende die E-Mail zur Bestätigung erneut.",
+      "generalError": "Die E-Mail konnte nicht bestätigt werden. Versuche es später erneut.",
+      "alreadyVerified": "Deine E-Mail war bereits bestätigt. Der volle Zugriff auf DeutschLabor ist aktiv.",
+      "invalid": "Der Bestätigungslink ist ungültig. Sende die Bestätigungs-E-Mail erneut.",
+      "expired": "Der Bestätigungslink ist abgelaufen. Sende die Bestätigungs-E-Mail erneut."
     }
   }
 }

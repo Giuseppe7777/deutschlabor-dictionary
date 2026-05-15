@@ -140,6 +140,18 @@
         "back": "Back",
         "createPasskey": "Create passkey"
       }
+    },
+    "verifyEmail": {
+      "kicker": "Email verification",
+      "title": "Verify email address",
+      "checking": "Checking the email verification link...",
+      "missingToken": "The verification link is incomplete. The token is missing.",
+      "success": "Your email has been verified successfully. Full access to DeutschLabor is now active.",
+      "invalidOrExpired": "The verification link is invalid or expired. Send the verification email again.",
+      "generalError": "The email could not be verified. Try again later.",
+      "alreadyVerified": "Your email was already verified. Full access to DeutschLabor is active.",
+      "invalid": "The verification link is invalid. Send the verification email again.",
+      "expired": "The verification link has expired. Send the verification email again."
     }
   }
 }

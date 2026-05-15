@@ -1,0 +1,38 @@
+.verify-email-page {
+  max-width: 44rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border: 1px solid var(--app-color-border);
+  border-radius: 1.5rem;
+  background: var(--app-color-surface);
+}
+
+.page-kicker {
+  margin: 0 0 0.75rem;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.verify-email-page h1 {
+  margin: 0;
+  color: var(--app-color-text);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05;
+}
+
+.verify-email-message {
+  margin: 1rem 0 0;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-body);
+  line-height: 1.6;
+}
+
+.verify-email-message.is-error {
+  color: #991b1b;
+}
+
+.verify-email-message.is-success {
+  color: #166534;
+}

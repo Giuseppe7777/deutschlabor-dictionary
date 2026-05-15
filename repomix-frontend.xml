@@ -63,6 +63,7 @@ src/app/app.routes.server.ts
 src/app/app.routes.ts
 src/app/app.spec.ts
 src/app/app.ts
+src/app/core/http/csrf-token.interceptor.ts
 src/app/core/i18n/accept-language.interceptor.ts
 src/app/core/i18n/interface-language-route.service.ts
 src/app/core/i18n/interface-language-storage.service.ts
@@ -74,6 +75,9 @@ src/app/features/account/pages/account-page/account-page.css
 src/app/features/account/pages/account-page/account-page.html
 src/app/features/account/pages/account-page/account-page.ts
 src/app/features/account/README.md
+src/app/features/auth/components/email-verification-notice/email-verification-notice.css
+src/app/features/auth/components/email-verification-notice/email-verification-notice.html
+src/app/features/auth/components/email-verification-notice/email-verification-notice.ts
 src/app/features/auth/models/auth-api.models.ts
 src/app/features/auth/models/auth-state.models.ts
 src/app/features/auth/models/current-user.ts
@@ -83,6 +87,9 @@ src/app/features/auth/pages/login-page/login-page.ts
 src/app/features/auth/pages/register-page/register-page.css
 src/app/features/auth/pages/register-page/register-page.html
 src/app/features/auth/pages/register-page/register-page.ts
+src/app/features/auth/pages/verify-email-page/verify-email-page.css
+src/app/features/auth/pages/verify-email-page/verify-email-page.html
+src/app/features/auth/pages/verify-email-page/verify-email-page.ts
 src/app/features/auth/README.md
 src/app/features/auth/services/auth-api.service.ts
 src/app/features/auth/services/auth-state.service.ts
@@ -117,6 +124,80 @@ tsconfig.spec.json
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="src/app/features/auth/pages/verify-email-page/verify-email-page.css">
+.verify-email-page {
+  max-width: 44rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border: 1px solid var(--app-color-border);
+  border-radius: 1.5rem;
+  background: var(--app-color-surface);
+}
+
+.page-kicker {
+  margin: 0 0 0.75rem;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.verify-email-page h1 {
+  margin: 0;
+  color: var(--app-color-text);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05;
+}
+
+.verify-email-message {
+  margin: 1rem 0 0;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-body);
+  line-height: 1.6;
+}
+
+.verify-email-message.is-error {
+  color: #991b1b;
+}
+</file>
+
+<file path="src/app/features/auth/pages/verify-email-page/verify-email-page.html">
+<section class="verify-email-page">
+  <p class="page-kicker">{{ 'pages.verifyEmail.kicker' | translate }}</p>
+  <h1>{{ 'pages.verifyEmail.title' | translate }}</h1>
+
+  @if (hasToken()) {
+    <p class="verify-email-message">
+      {{ 'pages.verifyEmail.checking' | translate }}
+    </p>
+  } @else {
+    <p class="verify-email-message is-error">
+      {{ 'pages.verifyEmail.missingToken' | translate }}
+    </p>
+  }
+</section>
+</file>
+
+<file path="src/app/features/auth/pages/verify-email-page/verify-email-page.ts">
+import { Component, computed, inject } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
+
+@Component({
+  selector: 'app-verify-email-page',
+  imports: [TranslatePipe],
+  templateUrl: './verify-email-page.html',
+  styleUrl: './verify-email-page.css',
+})
+export class VerifyEmailPage {
+  private readonly route = inject(ActivatedRoute);
+
+  private readonly token = this.route.snapshot.queryParamMap.get('token');
+
+  readonly hasToken = computed(() => typeof this.token === 'string' && this.token.length > 0);
+}
+</file>
 
 <file path=".editorconfig">
 # Editor configuration, see https://editorconfig.org
@@ -292,6 +373,80 @@ const serverConfig: ApplicationConfig = {
 };
 
 export const config = mergeApplicationConfig(appConfig, serverConfig);
+</file>
+
+<file path="src/app/core/http/csrf-token.interceptor.ts">
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { HttpInterceptorFn } from '@angular/common/http';
+import { inject, PLATFORM_ID } from '@angular/core';
+
+const CSRF_COOKIE_NAME = 'csrf_token';
+const CSRF_HEADER_NAME = 'X-CSRF-Token';
+
+const UNSAFE_HTTP_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+export const csrfTokenInterceptor: HttpInterceptorFn = (request, next) => {
+  const platformId = inject(PLATFORM_ID);
+
+  if (!isPlatformBrowser(platformId)) {
+    return next(request);
+  }
+
+  if (!isBackendRequest(request.url)) {
+    return next(request);
+  }
+
+  if (!UNSAFE_HTTP_METHODS.has(request.method.toUpperCase())) {
+    return next(request);
+  }
+
+  const document = inject(DOCUMENT);
+  const csrfToken = readCookie(document.cookie, CSRF_COOKIE_NAME);
+
+  if (csrfToken === null) {
+    return next(request);
+  }
+
+  const requestWithCsrf = request.clone({
+    setHeaders: {
+      [CSRF_HEADER_NAME]: csrfToken,
+    },
+  });
+
+  return next(requestWithCsrf);
+};
+
+function isBackendRequest(url: string): boolean {
+  const pathname = extractPathname(url);
+
+  return pathname.startsWith('/api/') || pathname.startsWith('/auth/');
+}
+
+function extractPathname(url: string): string {
+  try {
+    return new URL(url, 'http://localhost').pathname;
+  } catch {
+    return url;
+  }
+}
+
+function readCookie(cookieHeader: string, cookieName: string): string | null {
+  const cookies = cookieHeader.split(';');
+
+  for (const cookie of cookies) {
+    const [rawName, ...rawValueParts] = cookie.trim().split('=');
+
+    if (rawName !== cookieName) {
+      continue;
+    }
+
+    const rawValue = rawValueParts.join('=');
+
+    return decodeURIComponent(rawValue);
+  }
+
+  return null;
+}
 </file>
 
 <file path="src/app/core/i18n/accept-language.interceptor.ts">
@@ -726,70 +881,6 @@ export class AuthApiService {
       '/auth/email-verification/verify',
       payload,
     );
-  }
-}
-</file>
-
-<file path="src/app/features/auth/services/auth-state.service.ts">
-import { computed, inject, Injectable, signal } from '@angular/core';
-
-import {
-  AuthState,
-  initialAuthState,
-  toAnonymousState,
-  toAuthenticatedState,
-  toAuthErrorState,
-} from '../models/auth-state.models';
-import { AuthApiService } from './auth-api.service';
-
-@Injectable({
-  providedIn: 'root',
-})
-export class AuthStateService {
-  private readonly authApi = inject(AuthApiService);
-
-  private readonly stateSignal = signal<AuthState>(initialAuthState);
-
-  readonly state = this.stateSignal.asReadonly();
-
-  readonly user = computed(() => this.state().user);
-
-  readonly isLoading = computed(() => this.state().status === 'loading');
-
-  readonly isAnonymous = computed(() => this.state().status === 'anonymous');
-
-  readonly isAuthenticated = computed(
-    () =>
-      this.state().status === 'authenticated_unverified' ||
-      this.state().status === 'authenticated_verified',
-  );
-
-  readonly isEmailVerified = computed(
-    () => this.state().status === 'authenticated_verified',
-  );
-
-  readonly error = computed(() => this.state().error);
-
-  loadCurrentUser(): void {
-    this.stateSignal.set(initialAuthState);
-
-    this.authApi.me().subscribe({
-      next: (user) => {
-        this.stateSignal.set(toAuthenticatedState(user));
-      },
-      error: (error) => {
-        if (error?.status === 401) {
-          this.stateSignal.set(toAnonymousState());
-          return;
-        }
-
-        this.stateSignal.set(toAuthErrorState('auth_state_load_failed'));
-      },
-    });
-  }
-
-  clearAuthenticatedUser(): void {
-    this.stateSignal.set(toAnonymousState());
   }
 }
 </file>
@@ -1705,20 +1796,6 @@ export const reqHandler = createNodeRequestHandler(app);
 }
 </file>
 
-<file path="src/app/app.html">
-<header class="app-shell-header">
-  <div class="app-container">
-    <app-header />
-  </div>
-</header>
-
-<main class="app-shell-main">
-  <div class="app-container app-main-container">
-    <router-outlet />
-  </div>
-</main>
-</file>
-
 <file path="src/app/app.routes.server.ts">
 import { RenderMode, ServerRoute } from '@angular/ssr';
 
@@ -1863,6 +1940,249 @@ This means: the UI is Ukrainian, but the dictionary pair is German ↔ Ukrainian
 - src/app/features/dictionary/models/dictionary-language-pair.ts
 
 ---
+</file>
+
+<file path="src/app/features/auth/components/email-verification-notice/email-verification-notice.css">
+:host {
+  display: block;
+}
+
+.email-verification-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  margin-top: 1rem;
+  border: 1px solid #fbbf24;
+  border-radius: 1rem;
+  padding: 0.9rem 1rem;
+  background: #fffbeb;
+  color: #78350f;
+}
+
+.notice-marker {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #111827;
+  font-size: 1rem;
+  font-weight: var(--app-font-weight-bold);
+  line-height: 1;
+}
+
+.notice-content {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.notice-content strong {
+  font-size: var(--app-font-size-ui);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.notice-content p {
+  margin: 0;
+  color: #92400e;
+  font-size: var(--app-font-size-small);
+  line-height: 1.45;
+}
+
+.notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.notice-action {
+  border: 1px solid #f59e0b;
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  background: #f59e0b;
+  color: #111827;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.notice-action:hover:not(:disabled) {
+  background: #d97706;
+  border-color: #d97706;
+}
+
+.notice-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.notice-feedback {
+  margin: 0;
+  font-size: var(--app-font-size-small);
+  line-height: 1.4;
+}
+
+.notice-feedback.is-success {
+  color: #166534;
+}
+
+.notice-feedback.is-error {
+  color: #991b1b;
+}
+</file>
+
+<file path="src/app/features/auth/components/email-verification-notice/email-verification-notice.html">
+@if (isVisible()) {
+  <section class="email-verification-notice" role="status" aria-live="polite">
+    <div class="notice-marker" aria-hidden="true">!</div>
+
+    <div class="notice-content">
+      <strong>{{ 'auth.emailVerificationNotice.title' | translate }}</strong>
+      <p>{{ 'auth.emailVerificationNotice.message' | translate }}</p>
+
+      <div class="notice-actions">
+        <button
+          class="notice-action"
+          type="button"
+          [disabled]="isSending()"
+          (click)="resendVerificationEmail()"
+        >
+          @if (isSending()) {
+            {{ 'auth.emailVerificationNotice.resendSending' | translate }}
+          } @else {
+            {{ 'auth.emailVerificationNotice.resendAction' | translate }}
+          }
+        </button>
+
+        @switch (resendStatus()) {
+          @case ('success') {
+            <p class="notice-feedback is-success">
+              {{ 'auth.emailVerificationNotice.resendSuccess' | translate }}
+            </p>
+          }
+
+          @case ('rate_limited') {
+            <p class="notice-feedback is-error">
+              {{ 'auth.emailVerificationNotice.resendRateLimited' | translate }}
+            </p>
+          }
+
+          @case ('csrf_error') {
+            <p class="notice-feedback is-error">
+              {{ 'auth.emailVerificationNotice.resendCsrfError' | translate }}
+            </p>
+          }
+
+          @case ('error') {
+            <p class="notice-feedback is-error">
+              {{ 'auth.emailVerificationNotice.resendError' | translate }}
+            </p>
+          }
+        }
+      </div>
+    </div>
+  </section>
+}
+</file>
+
+<file path="src/app/features/auth/components/email-verification-notice/email-verification-notice.ts">
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, computed, inject, signal } from '@angular/core';
+import { TranslatePipe } from '@ngx-translate/core';
+
+import { AuthApiService } from '../../services/auth-api.service';
+import { AuthStateService } from '../../services/auth-state.service';
+
+type ResendVerificationEmailStatus =
+  | 'idle'
+  | 'loading'
+  | 'success'
+  | 'rate_limited'
+  | 'csrf_error'
+  | 'error';
+
+@Component({
+  selector: 'app-email-verification-notice',
+  imports: [TranslatePipe],
+  templateUrl: './email-verification-notice.html',
+  styleUrl: './email-verification-notice.css',
+})
+export class EmailVerificationNotice {
+  private readonly authApi = inject(AuthApiService);
+  private readonly authState = inject(AuthStateService);
+
+  readonly isVisible = this.authState.isEmailUnverified;
+
+  readonly resendStatus = signal<ResendVerificationEmailStatus>('idle');
+
+  readonly isSending = computed(() => this.resendStatus() === 'loading');
+
+  readonly canSend = computed(() => this.isVisible() && !this.isSending());
+
+  resendVerificationEmail(): void {
+    if (!this.canSend()) {
+      return;
+    }
+
+    this.resendStatus.set('loading');
+
+    this.authApi.resendVerificationEmail().subscribe({
+      next: () => {
+        this.resendStatus.set('success');
+      },
+      error: (error: unknown) => {
+        this.resendStatus.set(this.mapResendError(error));
+      },
+    });
+  }
+
+  private mapResendError(error: unknown): ResendVerificationEmailStatus {
+    if (!(error instanceof HttpErrorResponse)) {
+      return 'error';
+    }
+
+    if (error.status === 429) {
+      return 'rate_limited';
+    }
+
+    if (this.isCsrfError(error)) {
+      return 'csrf_error';
+    }
+
+    return 'error';
+  }
+
+  private isCsrfError(error: HttpErrorResponse): boolean {
+    if (error.status !== 403) {
+      return false;
+    }
+
+    const errorBody = error.error as
+      | {
+          error?: string;
+          message?: string;
+          messageKey?: string;
+        }
+      | null
+      | undefined;
+
+    const errorText = [
+      errorBody?.error,
+      errorBody?.message,
+      errorBody?.messageKey,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    return errorText.includes('csrf');
+  }
+}
 </file>
 
 <file path="src/app/features/auth/pages/login-page/login-page.css">
@@ -2309,6 +2629,74 @@ export class LoginPage {
 }
 </file>
 
+<file path="src/app/features/auth/services/auth-state.service.ts">
+import { computed, inject, Injectable, signal } from '@angular/core';
+
+import {
+  AuthState,
+  initialAuthState,
+  toAnonymousState,
+  toAuthenticatedState,
+  toAuthErrorState,
+} from '../models/auth-state.models';
+import { AuthApiService } from './auth-api.service';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class AuthStateService {
+  private readonly authApi = inject(AuthApiService);
+
+  private readonly stateSignal = signal<AuthState>(initialAuthState);
+
+  readonly state = this.stateSignal.asReadonly();
+
+  readonly user = computed(() => this.state().user);
+
+  readonly isLoading = computed(() => this.state().status === 'loading');
+
+  readonly isAnonymous = computed(() => this.state().status === 'anonymous');
+
+  readonly isAuthenticated = computed(
+    () =>
+      this.state().status === 'authenticated_unverified' ||
+      this.state().status === 'authenticated_verified',
+  );
+
+  readonly isEmailVerified = computed(
+    () => this.state().status === 'authenticated_verified',
+  );
+
+  readonly isEmailUnverified = computed(
+    () => this.state().status === 'authenticated_unverified',
+  );
+
+  readonly error = computed(() => this.state().error);
+
+  loadCurrentUser(): void {
+    this.stateSignal.set(initialAuthState);
+
+    this.authApi.me().subscribe({
+      next: (user) => {
+        this.stateSignal.set(toAuthenticatedState(user));
+      },
+      error: (error) => {
+        if (error?.status === 401) {
+          this.stateSignal.set(toAnonymousState());
+          return;
+        }
+
+        this.stateSignal.set(toAuthErrorState('auth_state_load_failed'));
+      },
+    });
+  }
+
+  clearAuthenticatedUser(): void {
+    this.stateSignal.set(toAnonymousState());
+  }
+}
+</file>
+
 <file path="src/styles.css">
 @import '@fontsource/roboto/latin-400.css';
 @import '@fontsource/roboto/latin-500.css';
@@ -2436,35 +2824,24 @@ a {
 }
 </file>
 
-<file path="src/app/app.config.ts">
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideHttpClient, withFetch, withInterceptors, } from '@angular/common/http';
-import { provideRouter } from '@angular/router';
-import { provideTranslateService } from '@ngx-translate/core';
-import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
-import { acceptLanguageInterceptor } from './core/i18n/accept-language.interceptor';
+<file path="src/app/app.html">
+<header class="app-shell-header">
+  <div class="app-container">
+    <app-header />
+  </div>
+</header>
 
-import { routes } from './app.routes';
-import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
-import { DEFAULT_INTERFACE_LANGUAGE } from './core/i18n/interface-language';
+<div class="app-shell-notice">
+  <div class="app-container">
+    <app-email-verification-notice />
+  </div>
+</div>
 
-export const appConfig: ApplicationConfig = {
-  providers: [
-    provideBrowserGlobalErrorListeners(),
-    provideRouter(routes),
-    provideClientHydration(withEventReplay()),
-    provideHttpClient(withFetch(), withInterceptors([acceptLanguageInterceptor]),),
-
-    provideTranslateService({
-      loader: provideTranslateHttpLoader({
-        prefix: '/i18n/',
-        suffix: '.json',
-      }),
-      fallbackLang: DEFAULT_INTERFACE_LANGUAGE,
-      lang: DEFAULT_INTERFACE_LANGUAGE,
-    }),
-  ],
-};
+<main class="app-shell-main">
+  <div class="app-container app-main-container">
+    <router-outlet />
+  </div>
+</main>
 </file>
 
 <file path="src/app/app.routes.ts">
@@ -2478,6 +2855,13 @@ export const routes: Routes = [
     path: '',
     pathMatch: 'full',
     redirectTo: DEFAULT_INTERFACE_LANGUAGE,
+  },
+  {
+    path: 'verify-email',
+    loadComponent: () =>
+      import('./features/auth/pages/verify-email-page/verify-email-page').then(
+        (m) => m.VerifyEmailPage,
+      ),
   },
   {
     matcher: interfaceLanguageUrlMatcher,
@@ -2515,6 +2899,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/auth/pages/register-page/register-page').then(
             (m) => m.RegisterPage,
+          ),
+      },
+      {
+        path: 'verify-email',
+        loadComponent: () =>
+          import('./features/auth/pages/verify-email-page/verify-email-page').then(
+            (m) => m.VerifyEmailPage,
           ),
       },
     ],
@@ -3287,34 +3678,36 @@ export class RegisterPage {
 }
 </file>
 
-<file path="src/app/app.ts">
-import { isPlatformBrowser } from '@angular/common';
-import { Component, inject, OnInit, PLATFORM_ID } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+<file path="src/app/app.config.ts">
+import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { provideHttpClient, withFetch, withInterceptors, } from '@angular/common/http';
+import { provideRouter } from '@angular/router';
+import { provideTranslateService } from '@ngx-translate/core';
+import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
+import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 
-import { InterfaceLanguageRouteService } from './core/i18n/interface-language-route.service';
-import { AuthStateService } from './features/auth/services/auth-state.service';
-import { Header } from './layout/header/header';
+import { routes } from './app.routes';
+import { acceptLanguageInterceptor } from './core/i18n/accept-language.interceptor';
+import { csrfTokenInterceptor } from './core/http/csrf-token.interceptor';
+import { DEFAULT_INTERFACE_LANGUAGE } from './core/i18n/interface-language';
 
-@Component({
-  selector: 'app-root',
-  imports: [RouterOutlet, Header],
-  templateUrl: './app.html',
-  styleUrl: './app.css',
-})
-export class App implements OnInit {
-  private readonly _interfaceLanguageRoute = inject(InterfaceLanguageRouteService);
-  private readonly authStateService = inject(AuthStateService);
-  private readonly platformId = inject(PLATFORM_ID);
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    provideRouter(routes),
+    provideClientHydration(withEventReplay()),
+    provideHttpClient(withFetch(), withInterceptors([acceptLanguageInterceptor, csrfTokenInterceptor]),),
 
-  ngOnInit(): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-
-    this.authStateService.loadCurrentUser();
-  }
-}
+    provideTranslateService({
+      loader: provideTranslateHttpLoader({
+        prefix: '/i18n/',
+        suffix: '.json',
+      }),
+      fallbackLang: DEFAULT_INTERFACE_LANGUAGE,
+      lang: DEFAULT_INTERFACE_LANGUAGE,
+    }),
+  ],
+};
 </file>
 
 <file path="src/app/layout/header/header.css">
@@ -3551,830 +3944,33 @@ export class App implements OnInit {
 }
 </file>
 
-<file path="public/i18n/de.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Lernen · Üben · Verstehen · Sprechen",
-    "language": "Sprache",
-    "mainNavigation": "Hauptnavigation"
-  },
-  "nav": {
-    "search": "Suche",
-    "training": "Training",
-    "account": "Konto"
-  },
-  "auth": {
-    "login": "Anmelden",
-    "register": "Registrieren"
-  },
-  "pages": {
-    "search": {
-      "kicker": "Wörterbuch",
-      "title": "Wörter suchen und verstehen",
-      "description": "Hier entsteht die zentrale Suchseite des DeutschLabor Dictionary."
-    },
-    "training": {
-      "kicker": "Training",
-      "title": "Wörter gezielt wiederholen",
-      "description": "Hier entsteht der Trainingsbereich für gesuchte und gespeicherte Wörter."
-    },
-    "account": {
-      "kicker": "Konto",
-      "title": "Dein persönlicher Bereich",
-      "description": "Hier entsteht der Bereich für Profil, Spracheinstellungen und Sicherheit."
-    },
-    "login": {
-      "kicker": "Anmeldung",
-      "title": "Bei DeutschLabor anmelden",
-      "description": "Melde dich mit deiner E-Mail und deinem Passkey an.",
-      "form": {
-        "email": {
-          "label": "E-Mail",
-          "placeholder": "name@example.com",
-          "error": "Bitte gib eine gültige E-Mail-Adresse ein."
-        },
-        "submit": "Mit Passkey anmelden",
-        "submitting": "Anmeldung wird vorbereitet...",
-        "messages": {
-          "preparing": "Login-Challenge wird vom Server angefordert...",
-          "challengeReady": "Login-Challenge wurde empfangen.",
-          "gettingPasskey": "Der Browser fordert deinen Passkey an...",
-          "passkeyReady": "Der Passkey wurde bestätigt.",
-          "finishing": "Login wird auf dem Server abgeschlossen...",
-          "authenticated": "Du bist jetzt bei DeutschLabor angemeldet."
-        },
-        "errors": {
-          "invalidInput": "Bitte überprüfe deine Eingabe.",
-          "userNotFound": "Für diese E-Mail wurde kein Konto gefunden.",
-          "noPasskeyRegistered": "Für dieses Konto ist kein Passkey registriert.",
-          "forbiddenOrigin": "Dieser Ursprung ist für den Login nicht erlaubt.",
-          "missingRequiredFields": "Die Login-Daten sind unvollständig.",
-          "loginSessionNotFound": "Die Login-Sitzung wurde nicht gefunden. Starte den Login erneut.",
-          "loginSessionExpired": "Die Login-Sitzung ist abgelaufen. Starte den Login erneut.",
-          "assertionValidationFailed": "Die Passkey-Bestätigung konnte nicht geprüft werden.",
-          "passkeyUnsupported": "Dieser Browser unterstützt keine Passkeys.",
-          "passkeyCancelledOrFailed": "Der Passkey wurde nicht bestätigt oder der Vorgang wurde abgebrochen.",
-          "tooManyRequests": "Zu viele Versuche. Bitte warte kurz und versuche es später erneut.",
-          "startFailed": "Der Login konnte nicht vorbereitet werden.",
-          "finishFailed": "Der Login konnte nicht abgeschlossen werden.",
-          "unknown": "Ein unbekannter Fehler ist aufgetreten."
-        }
-      },
-      "passkeyInfo": {
-        "title": "Wie funktioniert der Login?",
-        "text": "Zuerst gibst du deine E-Mail ein. Danach fordert der Browser deinen Passkey an. Nach erfolgreicher Bestätigung erstellt der Server deine Sitzung."
-      }
-    },
-    "register": {
-      "kicker": "Registrierung",
-      "title": "DeutschLabor-Konto erstellen",
-      "description": "Erstelle dein Konto mit E-Mail und Passkey. Im nächsten Schritt wird dein Gerät einen sicheren Passkey erstellen.",
-      "form": {
-        "firstName": {
-          "label": "Vorname",
-          "placeholder": "Dein Vorname",
-          "error": "Bitte gib deinen Vornamen ein."
-        },
-        "lastName": {
-          "label": "Nachname",
-          "placeholder": "Dein Nachname",
-          "error": "Bitte gib deinen Nachnamen ein."
-        },
-        "email": {
-          "label": "E-Mail",
-          "placeholder": "name@example.com",
-          "error": "Bitte gib eine gültige E-Mail-Adresse ein."
-        },
-        "submit": "Mit Passkey registrieren",
-        "submitting": "Registrierung wird vorbereitet...",
-        "messages": {
-          "preparing": "Registrierung wird vorbereitet...",
-          "creatingPasskey": "Bestätige die Erstellung des Passkeys im Browserfenster oder auf deinem Gerät.",
-          "finishing": "Registrierung wird abgeschlossen...",
-          "registered": "Das Konto wurde erstellt. Du bist jetzt bei DeutschLabor angemeldet. Wir haben dir eine E-Mail zur Bestätigung deiner Adresse gesendet."
-        },
-        "errors": {
-          "invalidInput": "Bitte überprüfe deine Eingaben.",
-          "emailAlreadyRegistered": "Diese E-Mail-Adresse ist bereits registriert.",
-          "forbiddenOrigin": "Dieser Origin ist für die Registrierung nicht erlaubt.",
-          "registrationSessionNotFound": "Die Registrierungssitzung wurde nicht gefunden. Starte die Registrierung erneut.",
-          "registrationSessionExpired": "Die Registrierungssitzung ist abgelaufen. Starte die Registrierung erneut.",
-          "passkeyUnsupported": "Dieser Browser oder dieses Gerät unterstützt keine Passkeys.",
-          "passkeyCancelled": "Die Passkey-Erstellung wurde abgebrochen.",
-          "passkeyInvalidState": "Für dieses Konto könnte auf diesem Gerät bereits ein Passkey existieren.",
-          "passkeyCreationFailed": "Der Passkey konnte nicht erstellt werden.",
-          "finishFailed": "Die Registrierung konnte nicht abgeschlossen werden.",
-          "unknown": "Ein unbekannter Fehler ist aufgetreten."
-        }
-      },
-      "passkeyInfo": {
-        "title": "Was passiert als Nächstes?",
-        "text": "Nach dem Absenden fordert der Browser dein Gerät auf, einen Passkey zu erstellen. Danach wird die Registrierung am Server abgeschlossen."
-      },
-      "passkeyModal": {
-        "kicker": "Passkey",
-        "title": "Konto mit Passkey erstellen",
-        "intro": "DeutschLabor verwendet kein Passwort. Stattdessen erstellt dein Gerät einen Passkey — einen sicheren Zugangsschlüssel für dein Konto.",
-        "browserDialog": "Nach dem Klick auf die Schaltfläche öffnet der Browser ein Fenster zur Passkey-Erstellung. Du kannst die Aktion mit deinem Smartphone, Windows Hello, Face ID, Touch ID, PIN oder einer anderen Methode bestätigen, die dein Gerät unterstützt.",
-        "privacy": "DeutschLabor erhält weder deinen Fingerabdruck noch Face ID oder PIN. Diese Daten bleiben auf deinem Gerät. Auf dem Server wird nur der öffentliche Schlüssel gespeichert.",
-        "back": "Zurück",
-        "createPasskey": "Passkey erstellen"
-      }
-    }
-  }
-}
-</file>
+<file path="src/app/app.ts">
+import { isPlatformBrowser } from '@angular/common';
+import { Component, inject, OnInit, PLATFORM_ID } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 
-<file path="public/i18n/en.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Learn · Practise · Understand · Speak",
-    "language": "Language",
-    "mainNavigation": "Main navigation"
-  },
-  "nav": {
-    "search": "Search",
-    "training": "Training",
-    "account": "Account"
-  },
-  "auth": {
-    "login": "Log in",
-    "register": "Register"
-  },
-  "pages": {
-    "search": {
-      "kicker": "Dictionary",
-      "title": "Search and understand words",
-      "description": "This will become the main search page of the DeutschLabor Dictionary."
-    },
-    "training": {
-      "kicker": "Training",
-      "title": "Review words with focus",
-      "description": "This will become the training area for searched and saved words."
-    },
-    "account": {
-      "kicker": "Account",
-      "title": "Your personal area",
-      "description": "This will become the area for profile, language settings and security."
-    },
-    "login": {
-      "kicker": "Login",
-      "title": "Log in to DeutschLabor",
-      "description": "Log in with your email and passkey.",
-      "form": {
-        "email": {
-          "label": "Email",
-          "placeholder": "name@example.com",
-          "error": "Please enter a valid email address."
-        },
-        "submit": "Log in with passkey",
-        "submitting": "Preparing login...",
-        "messages": {
-          "preparing": "Requesting login challenge from the server...",
-          "challengeReady": "Login challenge was received.",
-          "gettingPasskey": "The browser is requesting your passkey...",
-          "passkeyReady": "Passkey was confirmed.",
-          "finishing": "Finishing login on the server...",
-          "authenticated": "You are now logged in to DeutschLabor."
-        },
-        "errors": {
-          "invalidInput": "Please check your input.",
-          "userNotFound": "No account was found for this email address.",
-          "noPasskeyRegistered": "No passkey is registered for this account.",
-          "forbiddenOrigin": "This origin is not allowed for login.",
-          "missingRequiredFields": "The login data is incomplete.",
-          "loginSessionNotFound": "The login session was not found. Start login again.",
-          "loginSessionExpired": "The login session has expired. Start login again.",
-          "assertionValidationFailed": "The passkey confirmation could not be verified.",
-          "passkeyUnsupported": "This browser does not support passkeys.",
-          "passkeyCancelledOrFailed": "The passkey was not confirmed or the action was cancelled.",
-          "tooManyRequests": "Too many attempts. Please wait and try again later.",
-          "startFailed": "Login could not be prepared.",
-          "finishFailed": "Login could not be completed.",
-          "unknown": "An unknown error occurred."
-        }
-      },
-      "passkeyInfo": {
-        "title": "How does login work?",
-        "text": "First enter your email. Then the browser asks for your passkey. After successful confirmation, the server creates your session."
-      }
-    },
-    "register": {
-      "kicker": "Registration",
-      "title": "Create a DeutschLabor account",
-      "description": "Create your account with email and passkey. In the next step your device will create a secure passkey.",
-      "form": {
-        "firstName": {
-          "label": "First name",
-          "placeholder": "Your first name",
-          "error": "Please enter your first name."
-        },
-        "lastName": {
-          "label": "Last name",
-          "placeholder": "Your last name",
-          "error": "Please enter your last name."
-        },
-        "email": {
-          "label": "Email",
-          "placeholder": "name@example.com",
-          "error": "Please enter a valid email address."
-        },
-        "submit": "Register with passkey",
-        "submitting": "Preparing registration...",
-        "messages": {
-          "preparing": "Preparing registration...",
-          "creatingPasskey": "Confirm passkey creation in the browser window or on your device.",
-          "finishing": "Finishing registration...",
-          "registered": "Your account was created. You are now signed in to DeutschLabor. We sent you an email to verify your address."
-        },
-        "errors": {
-          "invalidInput": "Please check your input.",
-          "emailAlreadyRegistered": "This email address is already registered.",
-          "forbiddenOrigin": "This origin is not allowed for registration.",
-          "registrationSessionNotFound": "The registration session was not found. Start registration again.",
-          "registrationSessionExpired": "The registration session has expired. Start registration again.",
-          "passkeyUnsupported": "This browser or device does not support passkeys.",
-          "passkeyCancelled": "Passkey creation was cancelled.",
-          "passkeyInvalidState": "A passkey for this account may already exist on this device.",
-          "passkeyCreationFailed": "Passkey could not be created.",
-          "finishFailed": "Registration could not be completed.",
-          "unknown": "An unknown error occurred."
-        }
-      },
-      "passkeyInfo": {
-        "title": "What happens next?",
-        "text": "After submitting the form, the browser will ask your device to create a passkey. Then the registration will be completed on the server."
-      },
-      "passkeyModal": {
-        "kicker": "Passkey",
-        "title": "Create account with passkey",
-        "intro": "DeutschLabor does not use a password. Instead, your device creates a passkey — a secure access key for your account.",
-        "browserDialog": "After clicking the button, the browser will open a passkey creation window. You can confirm the action with your phone, Windows Hello, Face ID, Touch ID, PIN, or another method supported by your device.",
-        "privacy": "DeutschLabor does not receive your fingerprint, Face ID, or PIN. This data stays on your device. Only the public key is stored on the server.",
-        "back": "Back",
-        "createPasskey": "Create passkey"
-      }
-    }
-  }
-}
-</file>
+import { InterfaceLanguageRouteService } from './core/i18n/interface-language-route.service';
+import { AuthStateService } from './features/auth/services/auth-state.service';
+import { Header } from './layout/header/header';
+import { EmailVerificationNotice } from './features/auth/components/email-verification-notice/email-verification-notice';
 
-<file path="public/i18n/hu.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Tanulni · Gyakorolni · Érteni · Beszélni",
-    "language": "Nyelv",
-    "mainNavigation": "Fő navigáció"
-  },
-  "nav": {
-    "search": "Keresés",
-    "training": "Gyakorlás",
-    "account": "Fiók"
-  },
-  "auth": {
-    "login": "Belépés",
-    "register": "Regisztráció"
-  },
-  "pages": {
-    "search": {
-      "kicker": "Szótár",
-      "title": "Szavak keresése és megértése",
-      "description": "Itt készül a DeutschLabor Dictionary fő keresőoldala."
-    },
-    "training": {
-      "kicker": "Gyakorlás",
-      "title": "Szavak célzott ismétlése",
-      "description": "Itt készül a gyakorlási terület a keresett és mentett szavakhoz."
-    },
-    "account": {
-      "kicker": "Fiók",
-      "title": "A személyes felületed",
-      "description": "Itt készül a profil, a nyelvi beállítások és a biztonsági rész."
-    },
-    "login": {
-      "kicker": "Belépés",
-      "title": "Belépés a DeutschLaborba",
-      "description": "Lépj be emaillel és passkey segítségével.",
-      "form": {
-        "email": {
-          "label": "Email",
-          "placeholder": "name@example.com",
-          "error": "Adj meg egy érvényes email-címet."
-        },
-        "submit": "Belépés passkey-vel",
-        "submitting": "Belépés előkészítése...",
-        "messages": {
-          "preparing": "Login challenge lekérése a szervertől...",
-          "challengeReady": "A login challenge megérkezett.",
-          "gettingPasskey": "A böngésző kéri a passkey-t...",
-          "passkeyReady": "A passkey megerősítve.",
-          "finishing": "Belépés befejezése a szerveren...",
-          "authenticated": "Most már be vagy jelentkezve a DeutschLaborba."
-        },
-        "errors": {
-          "invalidInput": "Ellenőrizd a megadott adatokat.",
-          "userNotFound": "Ehhez az email-címhez nem található fiók.",
-          "noPasskeyRegistered": "Ehhez a fiókhoz még nincs passkey regisztrálva.",
-          "forbiddenOrigin": "Ez az origin nem engedélyezett a belépéshez.",
-          "missingRequiredFields": "A belépési adatok hiányosak.",
-          "loginSessionNotFound": "A login session nem található. Indítsd újra a belépést.",
-          "loginSessionExpired": "A login session lejárt. Indítsd újra a belépést.",
-          "assertionValidationFailed": "A passkey megerősítését nem sikerült ellenőrizni.",
-          "passkeyUnsupported": "Ez a böngésző nem támogatja a passkey használatát.",
-          "passkeyCancelledOrFailed": "A passkey nincs megerősítve, vagy a művelet meg lett szakítva.",
-          "tooManyRequests": "Túl sok próbálkozás. Várj egy kicsit, majd próbáld újra.",
-          "startFailed": "A belépés előkészítése nem sikerült.",
-          "finishFailed": "A belépést nem sikerült befejezni.",
-          "unknown": "Ismeretlen hiba történt."
-        }
-      },
-      "passkeyInfo": {
-        "title": "Hogyan működik a belépés?",
-        "text": "Először megadod az emailedet. Ezután a böngésző kéri a passkey-t. Sikeres megerősítés után a szerver létrehozza a munkamenetedet."
-      }
-    },
-    "register": {
-      "kicker": "Regisztráció",
-      "title": "DeutschLabor-fiók létrehozása",
-      "description": "Hozz létre fiókot emaillel és passkey segítségével. A következő lépésben az eszközöd létrehoz egy biztonságos passkey-t.",
-      "form": {
-        "firstName": {
-          "label": "Keresztnév",
-          "placeholder": "A keresztneved",
-          "error": "Add meg a keresztneved."
-        },
-        "lastName": {
-          "label": "Vezetéknév",
-          "placeholder": "A vezetékneved",
-          "error": "Add meg a vezetékneved."
-        },
-        "email": {
-          "label": "Email",
-          "placeholder": "name@example.com",
-          "error": "Adj meg egy érvényes email-címet."
-        },
-        "submit": "Regisztráció passkey-vel",
-        "submitting": "Regisztráció előkészítése...",
-        "messages": {
-          "preparing": "Regisztráció előkészítése...",
-          "creatingPasskey": "Erősítsd meg a passkey létrehozását a böngészőablakban vagy az eszközödön.",
-          "finishing": "Regisztráció befejezése...",
-          "registered": "A fiók létrejött. Most már be vagy jelentkezve a DeutschLaborba. Küldtünk egy emailt a címed megerősítéséhez."
-        },
-        "errors": {
-          "invalidInput": "Ellenőrizd a megadott adatokat.",
-          "emailAlreadyRegistered": "Ez az email-cím már regisztrálva van.",
-          "forbiddenOrigin": "Ez az origin nem engedélyezett a regisztrációhoz.",
-          "registrationSessionNotFound": "A regisztrációs munkamenet nem található. Indítsd újra a regisztrációt.",
-          "registrationSessionExpired": "A regisztrációs munkamenet lejárt. Indítsd újra a regisztrációt.",
-          "passkeyUnsupported": "Ez a böngésző vagy eszköz nem támogatja a passkey-t.",
-          "passkeyCancelled": "A passkey létrehozása meg lett szakítva.",
-          "passkeyInvalidState": "Ehhez a fiókhoz már létezhet passkey ezen az eszközön.",
-          "passkeyCreationFailed": "Nem sikerült létrehozni a passkey-t.",
-          "finishFailed": "Nem sikerült befejezni a regisztrációt.",
-          "unknown": "Ismeretlen hiba történt."
-        }
-      },
-      "passkeyInfo": {
-        "title": "Mi történik ezután?",
-        "text": "Az űrlap elküldése után a böngésző megkéri az eszközödet, hogy hozzon létre egy passkey-t. Ezután a regisztráció a szerveren fejeződik be."
-      },
-      "passkeyModal": {
-        "kicker": "Passkey",
-        "title": "Fiók létrehozása passkey-vel",
-        "intro": "A DeutschLabor nem használ jelszót. Ehelyett az eszközöd létrehoz egy passkey-t — egy biztonságos hozzáférési kulcsot a fiókodhoz.",
-        "browserDialog": "A gombra kattintás után a böngésző megnyitja a passkey létrehozására szolgáló ablakot. A műveletet telefonnal, Windows Hello-val, Face ID-val, Touch ID-val, PIN-kóddal vagy az eszközöd által támogatott más módszerrel erősítheted meg.",
-        "privacy": "A DeutschLabor nem kapja meg az ujjlenyomatodat, Face ID-dat vagy PIN-kódodat. Ezek az adatok az eszközödön maradnak. A szerveren csak a nyilvános kulcs kerül tárolásra.",
-        "back": "Vissza",
-        "createPasskey": "Passkey létrehozása"
-      }
-    }
-  }
-}
-</file>
+@Component({
+  selector: 'app-root',
+  imports: [RouterOutlet, Header, EmailVerificationNotice],
+  templateUrl: './app.html',
+  styleUrl: './app.css',
+})
+export class App implements OnInit {
+  private readonly _interfaceLanguageRoute = inject(InterfaceLanguageRouteService);
+  private readonly authStateService = inject(AuthStateService);
+  private readonly platformId = inject(PLATFORM_ID);
 
-<file path="public/i18n/pl.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Uczyć się · Ćwiczyć · Rozumieć · Mówić",
-    "language": "Język",
-    "mainNavigation": "Główna nawigacja"
-  },
-  "nav": {
-    "search": "Szukaj",
-    "training": "Trening",
-    "account": "Konto"
-  },
-  "auth": {
-    "login": "Logowanie",
-    "register": "Rejestracja"
-  },
-  "pages": {
-    "search": {
-      "kicker": "Słownik",
-      "title": "Szukaj i rozumiej słowa",
-      "description": "Tutaj powstanie główna strona wyszukiwania DeutschLabor Dictionary."
-    },
-    "training": {
-      "kicker": "Trening",
-      "title": "Powtarzaj słowa świadomie",
-      "description": "Tutaj powstanie strefa treningu dla wyszukanych i zapisanych słów."
-    },
-    "account": {
-      "kicker": "Konto",
-      "title": "Twoja osobista strefa",
-      "description": "Tutaj powstanie profil, ustawienia języka i bezpieczeństwo."
-    },
-    "login": {
-      "kicker": "Logowanie",
-      "title": "Zaloguj się do DeutschLabor",
-      "description": "Zaloguj się za pomocą emaila i passkey.",
-      "form": {
-        "email": {
-          "label": "Email",
-          "placeholder": "name@example.com",
-          "error": "Podaj prawidłowy adres email."
-        },
-        "submit": "Zaloguj się z passkey",
-        "submitting": "Przygotowywanie logowania...",
-        "messages": {
-          "preparing": "Pobieranie login challenge z serwera...",
-          "challengeReady": "Login challenge został odebrany.",
-          "gettingPasskey": "Przeglądarka prosi o twój passkey...",
-          "passkeyReady": "Passkey został potwierdzony.",
-          "finishing": "Kończenie logowania na serwerze...",
-          "authenticated": "Jesteś teraz zalogowany w DeutschLabor."
-        },
-        "errors": {
-          "invalidInput": "Sprawdź wprowadzone dane.",
-          "userNotFound": "Nie znaleziono konta dla tego adresu email.",
-          "noPasskeyRegistered": "Dla tego konta nie zarejestrowano jeszcze passkey.",
-          "forbiddenOrigin": "Ten origin nie jest dozwolony dla logowania.",
-          "missingRequiredFields": "Dane logowania są niepełne.",
-          "loginSessionNotFound": "Nie znaleziono sesji logowania. Rozpocznij logowanie ponownie.",
-          "loginSessionExpired": "Sesja logowania wygasła. Rozpocznij logowanie ponownie.",
-          "assertionValidationFailed": "Nie udało się zweryfikować potwierdzenia passkey.",
-          "passkeyUnsupported": "Ta przeglądarka nie obsługuje passkey.",
-          "passkeyCancelledOrFailed": "Passkey nie został potwierdzony albo akcja została anulowana.",
-          "tooManyRequests": "Zbyt wiele prób. Poczekaj i spróbuj ponownie później.",
-          "startFailed": "Nie udało się przygotować logowania.",
-          "finishFailed": "Nie udało się zakończyć logowania.",
-          "unknown": "Wystąpił nieznany błąd."
-        }
-      },
-      "passkeyInfo": {
-        "title": "Jak działa logowanie?",
-        "text": "Najpierw wpisujesz email. Następnie przeglądarka poprosi o twój passkey. Po udanym potwierdzeniu serwer utworzy twoją sesję."
-      }
-    },
-    "register": {
-      "kicker": "Rejestracja",
-      "title": "Utwórz konto DeutschLabor",
-      "description": "Utwórz konto za pomocą emaila i passkey. W następnym kroku twoje urządzenie utworzy bezpieczny passkey.",
-      "form": {
-        "firstName": {
-          "label": "Imię",
-          "placeholder": "Twoje imię",
-          "error": "Podaj imię."
-        },
-        "lastName": {
-          "label": "Nazwisko",
-          "placeholder": "Twoje nazwisko",
-          "error": "Podaj nazwisko."
-        },
-        "email": {
-          "label": "Email",
-          "placeholder": "name@example.com",
-          "error": "Podaj prawidłowy adres email."
-        },
-        "submit": "Zarejestruj przez passkey",
-        "submitting": "Przygotowywanie rejestracji...",
-        "messages": {
-          "preparing": "Przygotowywanie rejestracji...",
-          "creatingPasskey": "Potwierdź utworzenie passkey w oknie przeglądarki lub na swoim urządzeniu.",
-          "finishing": "Kończenie rejestracji...",
-          "registered": "Konto zostało utworzone. Jesteś teraz zalogowany w DeutschLabor. Wysłaliśmy email do potwierdzenia adresu."
-        },
-        "errors": {
-          "invalidInput": "Sprawdź wprowadzone dane.",
-          "emailAlreadyRegistered": "Ten adres email jest już zarejestrowany.",
-          "forbiddenOrigin": "Ten origin nie jest dozwolony dla rejestracji.",
-          "registrationSessionNotFound": "Nie znaleziono sesji rejestracji. Rozpocznij rejestrację ponownie.",
-          "registrationSessionExpired": "Sesja rejestracji wygasła. Rozpocznij rejestrację ponownie.",
-          "passkeyUnsupported": "Ta przeglądarka lub to urządzenie nie obsługuje passkey.",
-          "passkeyCancelled": "Tworzenie passkey zostało anulowane.",
-          "passkeyInvalidState": "Passkey dla tego konta może już istnieć na tym urządzeniu.",
-          "passkeyCreationFailed": "Nie udało się utworzyć passkey.",
-          "finishFailed": "Nie udało się zakończyć rejestracji.",
-          "unknown": "Wystąpił nieznany błąd."
-        }
-      },
-      "passkeyInfo": {
-        "title": "Co stanie się dalej?",
-        "text": "Po wysłaniu formularza przeglądarka poprosi twoje urządzenie o utworzenie passkey. Następnie rejestracja zostanie zakończona na serwerze."
-      },
-      "passkeyModal": {
-        "kicker": "Passkey",
-        "title": "Tworzenie konta z passkey",
-        "intro": "DeutschLabor nie używa hasła. Zamiast hasła twoje urządzenie utworzy passkey — bezpieczny klucz dostępu do konta.",
-        "browserDialog": "Po kliknięciu przycisku przeglądarka otworzy okno tworzenia passkey. Możesz potwierdzić działanie telefonem, Windows Hello, Face ID, Touch ID, PIN-em albo inną metodą obsługiwaną przez twoje urządzenie.",
-        "privacy": "DeutschLabor nie otrzymuje twojego odcisku palca, Face ID ani PIN-u. Te dane pozostają na twoim urządzeniu. Na serwerze przechowywany jest tylko klucz publiczny.",
-        "back": "Wstecz",
-        "createPasskey": "Utwórz passkey"
-      }
+  ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
     }
-  }
-}
-</file>
 
-<file path="public/i18n/ru.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Учить · Тренировать · Понимать · Говорить",
-    "language": "Язык",
-    "mainNavigation": "Главная навигация"
-  },
-  "nav": {
-    "search": "Поиск",
-    "training": "Тренировка",
-    "account": "Кабинет"
-  },
-  "auth": {
-    "login": "Вход",
-    "register": "Регистрация"
-  },
-  "pages": {
-    "search": {
-      "kicker": "Словарь",
-      "title": "Искать и понимать слова",
-      "description": "Здесь будет главная страница поиска DeutschLabor Dictionary."
-    },
-    "training": {
-      "kicker": "Тренировка",
-      "title": "Целенаправленно повторять слова",
-      "description": "Здесь будет зона тренировки для найденных и сохранённых слов."
-    },
-    "account": {
-      "kicker": "Кабинет",
-      "title": "Твоя личная зона",
-      "description": "Здесь будет профиль, языковые настройки и безопасность."
-    },
-    "login": {
-      "kicker": "Вход",
-      "title": "Войти в DeutschLabor",
-      "description": "Войди с помощью email и passkey.",
-      "form": {
-        "email": {
-          "label": "Email",
-          "placeholder": "name@example.com",
-          "error": "Введи правильный email-адрес."
-        },
-        "submit": "Войти с passkey",
-        "submitting": "Подготовка входа...",
-        "messages": {
-          "preparing": "Запрашиваем login challenge у сервера...",
-          "challengeReady": "Login challenge получен.",
-          "gettingPasskey": "Браузер запрашивает твой passkey...",
-          "passkeyReady": "Passkey подтверждён.",
-          "finishing": "Завершаем вход на сервере...",
-          "authenticated": "Ты вошёл в DeutschLabor."
-        },
-        "errors": {
-          "invalidInput": "Проверь введённые данные.",
-          "userNotFound": "Аккаунт с этим email не найден.",
-          "noPasskeyRegistered": "Для этого аккаунта ещё не зарегистрирован passkey.",
-          "forbiddenOrigin": "Этот origin не разрешён для входа.",
-          "missingRequiredFields": "Данные для входа неполные.",
-          "loginSessionNotFound": "Login session не найдена. Начни вход заново.",
-          "loginSessionExpired": "Login session истекла. Начни вход заново.",
-          "assertionValidationFailed": "Не удалось проверить passkey-подтверждение.",
-          "passkeyUnsupported": "Этот браузер не поддерживает passkey.",
-          "passkeyCancelledOrFailed": "Passkey не подтверждён или действие отменено.",
-          "tooManyRequests": "Слишком много попыток. Подожди и попробуй позже.",
-          "startFailed": "Не удалось подготовить вход.",
-          "finishFailed": "Не удалось завершить вход.",
-          "unknown": "Произошла неизвестная ошибка."
-        }
-      },
-      "passkeyInfo": {
-        "title": "Как работает вход?",
-        "text": "Сначала ты вводишь email. Затем браузер запрашивает твой passkey. После успешного подтверждения сервер создаёт твою сессию."
-      }
-    },
-    "register": {
-      "kicker": "Регистрация",
-      "title": "Создать аккаунт DeutschLabor",
-      "description": "Создай аккаунт с помощью email и passkey. На следующем шаге твоё устройство создаст безопасный passkey.",
-      "form": {
-        "firstName": {
-          "label": "Имя",
-          "placeholder": "Твоё имя",
-          "error": "Введи имя."
-        },
-        "lastName": {
-          "label": "Фамилия",
-          "placeholder": "Твоя фамилия",
-          "error": "Введи фамилию."
-        },
-        "email": {
-          "label": "Email",
-          "placeholder": "name@example.com",
-          "error": "Введи правильный email-адрес."
-        },
-        "submit": "Зарегистрироваться через passkey",
-        "submitting": "Подготовка регистрации...",
-        "messages": {
-          "preparing": "Подготовка регистрации...",
-          "creatingPasskey": "Подтверди создание passkey в окне браузера или на своём устройстве.",
-          "finishing": "Завершение регистрации...",
-          "registered": "Аккаунт создан. Ты уже вошёл в DeutschLabor. Мы отправили email для подтверждения адреса."
-        },
-        "errors": {
-          "invalidInput": "Проверь введённые данные.",
-          "emailAlreadyRegistered": "Этот email-адрес уже зарегистрирован.",
-          "forbiddenOrigin": "Этот origin не разрешён для регистрации.",
-          "registrationSessionNotFound": "Сессия регистрации не найдена. Начни регистрацию заново.",
-          "registrationSessionExpired": "Сессия регистрации истекла. Начни регистрацию заново.",
-          "passkeyUnsupported": "Этот браузер или устройство не поддерживает passkey.",
-          "passkeyCancelled": "Создание passkey было отменено.",
-          "passkeyInvalidState": "Passkey для этого аккаунта уже может существовать на этом устройстве.",
-          "passkeyCreationFailed": "Не удалось создать passkey.",
-          "finishFailed": "Не удалось завершить регистрацию.",
-          "unknown": "Произошла неизвестная ошибка."
-        }
-      },
-      "passkeyInfo": {
-        "title": "Что будет дальше?",
-        "text": "После отправки формы браузер попросит твоё устройство создать passkey. Затем регистрация будет завершена на сервере."
-      },
-      "passkeyModal": {
-        "kicker": "Passkey",
-        "title": "Создание аккаунта с passkey",
-        "intro": "DeutschLabor не использует пароль. Вместо пароля твоё устройство создаст passkey — безопасный ключ доступа к аккаунту.",
-        "browserDialog": "После нажатия кнопки браузер откроет окно создания passkey. Ты можешь подтвердить действие через телефон, Windows Hello, Face ID, Touch ID, PIN или другой способ, который поддерживает твоё устройство.",
-        "privacy": "DeutschLabor не получает твой отпечаток пальца, Face ID или PIN. Эти данные остаются на твоём устройстве. На сервере хранится только публичный ключ.",
-        "back": "Назад",
-        "createPasskey": "Создать passkey"
-      }
-    }
-  }
-}
-</file>
-
-<file path="public/i18n/uk.json">
-{
-  "app": {
-    "name": "DeutschLabor"
-  },
-  "header": {
-    "brand": "DeutschLabor",
-    "slogan": "Вчити · Тренувати · Розуміти · Говорити",
-    "language": "Мова",
-    "mainNavigation": "Головна навігація"
-  },
-  "nav": {
-    "search": "Пошук",
-    "training": "Тренування",
-    "account": "Кабінет"
-  },
-  "auth": {
-    "login": "Вхід",
-    "register": "Реєстрація"
-  },
-  "pages": {
-    "search": {
-      "kicker": "Словник",
-      "title": "Шукати й розуміти слова",
-      "description": "Тут буде головна сторінка пошуку DeutschLabor Dictionary."
-    },
-    "training": {
-      "kicker": "Тренування",
-      "title": "Цілеспрямовано повторювати слова",
-      "description": "Тут буде зона тренування для знайдених і збережених слів."
-    },
-    "account": {
-      "kicker": "Кабінет",
-      "title": "Твоя особиста зона",
-      "description": "Тут буде профіль, мовні налаштування і безпека."
-    },
-    "login": {
-      "kicker": "Вхід",
-      "title": "Увійти в DeutschLabor",
-      "description": "Увійди за допомогою email і passkey.",
-      "form": {
-        "email": {
-          "label": "Email",
-          "placeholder": "name@example.com",
-          "error": "Введи правильну email-адресу."
-        },
-        "submit": "Увійти з passkey",
-        "submitting": "Підготовка входу...",
-        "messages": {
-          "preparing": "Запитуємо login challenge у сервера...",
-          "challengeReady": "Login challenge отримано.",
-          "gettingPasskey": "Браузер запитує твій passkey...",
-          "passkeyReady": "Passkey підтверджено.",
-          "finishing": "Завершуємо вхід на сервері...",
-          "authenticated": "Ти увійшов у DeutschLabor."
-        },
-        "errors": {
-          "invalidInput": "Перевір введені дані.",
-          "userNotFound": "Обліковий запис з цим email не знайдено.",
-          "noPasskeyRegistered": "Для цього облікового запису ще не зареєстровано passkey.",
-          "forbiddenOrigin": "Цей origin не дозволений для входу.",
-          "missingRequiredFields": "Дані для входу неповні.",
-          "loginSessionNotFound": "Login session не знайдено. Почни вхід заново.",
-          "loginSessionExpired": "Login session закінчилась. Почни вхід заново.",
-          "assertionValidationFailed": "Не вдалося перевірити passkey-підтвердження.",
-          "passkeyUnsupported": "Цей браузер не підтримує passkey.",
-          "passkeyCancelledOrFailed": "Passkey не підтверджено або дію скасовано.",
-          "tooManyRequests": "Забагато спроб. Почекай і спробуй пізніше.",
-          "startFailed": "Не вдалося підготувати вхід.",
-          "finishFailed": "Не вдалося завершити вхід.",
-          "unknown": "Сталася невідома помилка."
-        }
-      },
-      "passkeyInfo": {
-        "title": "Як працює вхід?",
-        "text": "Спочатку ти вводиш email. Потім браузер запитує твій passkey. Після успішного підтвердження сервер створює твою сесію."
-      }
-    },
-    "register": {
-      "kicker": "Реєстрація",
-      "title": "Створити акаунт DeutschLabor",
-      "description": "Створи акаунт за допомогою email і passkey. На наступному кроці твій пристрій створить безпечний passkey.",
-      "form": {
-        "firstName": {
-          "label": "Ім’я",
-          "placeholder": "Твоє ім’я",
-          "error": "Введи ім’я."
-        },
-        "lastName": {
-          "label": "Прізвище",
-          "placeholder": "Твоє прізвище",
-          "error": "Введи прізвище."
-        },
-        "email": {
-          "label": "Email",
-          "placeholder": "name@example.com",
-          "error": "Введи правильну email-адресу."
-        },
-        "submit": "Зареєструватися через passkey",
-        "submitting": "Підготовка реєстрації...",
-        "messages": {
-          "preparing": "Підготовка реєстрації...",
-          "creatingPasskey": "Підтвердь створення passkey у вікні браузера або на своєму пристрої.",
-          "finishing": "Завершення реєстрації...",
-          "registered": "Акаунт створено. Ти вже увійшов у DeutschLabor. Ми надіслали email для підтвердження адреси."
-        },
-        "errors": {
-          "invalidInput": "Перевір введені дані.",
-          "emailAlreadyRegistered": "Ця email-адреса вже зареєстрована.",
-          "forbiddenOrigin": "Цей origin не дозволений для реєстрації.",
-          "registrationSessionNotFound": "Сесію реєстрації не знайдено. Почни реєстрацію ще раз.",
-          "registrationSessionExpired": "Сесія реєстрації закінчилась. Почни реєстрацію ще раз.",
-          "passkeyUnsupported": "Цей браузер або пристрій не підтримує passkey.",
-          "passkeyCancelled": "Створення passkey було скасовано.",
-          "passkeyInvalidState": "Passkey для цього акаунта вже може існувати на цьому пристрої.",
-          "passkeyCreationFailed": "Не вдалося створити passkey.",
-          "finishFailed": "Не вдалося завершити реєстрацію.",
-          "unknown": "Сталася невідома помилка."
-        }
-      },
-      "passkeyInfo": {
-        "title": "Що буде далі?",
-        "text": "Після відправлення форми браузер попросить твій пристрій створити passkey. Потім реєстрація буде завершена на сервері."
-      },
-      "passkeyModal": {
-        "kicker": "Passkey",
-        "title": "Створення акаунта з passkey",
-        "intro": "DeutschLabor не використовує пароль. Замість пароля твій пристрій створить passkey — безпечний ключ доступу для входу в акаунт.",
-        "browserDialog": "Після натискання кнопки браузер відкриє вікно створення passkey. Ти можеш підтвердити дію через телефон, Windows Hello, Face ID, Touch ID, PIN або інший спосіб, який підтримує твій пристрій.",
-        "privacy": "DeutschLabor не отримує твій відбиток пальця, Face ID або PIN. Ці дані залишаються на твоєму пристрої. На сервері зберігається тільки публічний ключ.",
-        "back": "Назад",
-        "createPasskey": "Створити passkey"
-      }
-    }
+    this.authStateService.loadCurrentUser();
   }
 }
 </file>
@@ -4528,6 +4124,930 @@ export class Header {
     const targetFragment = fragment ? `#${fragment}` : '';
 
     return `${targetPath}${targetQuery}${targetFragment}`;
+  }
+}
+</file>
+
+<file path="public/i18n/de.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Lernen · Üben · Verstehen · Sprechen",
+    "language": "Sprache",
+    "mainNavigation": "Hauptnavigation"
+  },
+  "nav": {
+    "search": "Suche",
+    "training": "Training",
+    "account": "Konto"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "register": "Registrieren",
+    "emailVerificationNotice": {
+      "title": "Deine E-Mail ist noch nicht bestätigt.",
+      "message": "Wir haben dir eine E-Mail zur Bestätigung gesendet. Prüfe dein Postfach und öffne den Bestätigungslink. Wenn die E-Mail nicht angekommen ist, kannst du sie erneut senden.",
+      "resendAction": "E-Mail erneut senden",
+      "resendSending": "Wird gesendet...",
+      "resendSuccess": "Die Bestätigungs-E-Mail wurde erneut gesendet.",
+      "resendRateLimited": "Zu viele Versuche. Versuche es etwas später erneut.",
+      "resendCsrfError": "Die Sicherheitsprüfung ist fehlgeschlagen. Lade die Seite neu und versuche es erneut.",
+      "resendError": "Die E-Mail konnte nicht gesendet werden. Versuche es erneut."
+    }
+  },
+  "pages": {
+    "search": {
+      "kicker": "Wörterbuch",
+      "title": "Wörter suchen und verstehen",
+      "description": "Hier entsteht die zentrale Suchseite des DeutschLabor Dictionary."
+    },
+    "training": {
+      "kicker": "Training",
+      "title": "Wörter gezielt wiederholen",
+      "description": "Hier entsteht der Trainingsbereich für gesuchte und gespeicherte Wörter."
+    },
+    "account": {
+      "kicker": "Konto",
+      "title": "Dein persönlicher Bereich",
+      "description": "Hier entsteht der Bereich für Profil, Spracheinstellungen und Sicherheit."
+    },
+    "login": {
+      "kicker": "Anmeldung",
+      "title": "Bei DeutschLabor anmelden",
+      "description": "Melde dich mit deiner E-Mail und deinem Passkey an.",
+      "form": {
+        "email": {
+          "label": "E-Mail",
+          "placeholder": "name@example.com",
+          "error": "Bitte gib eine gültige E-Mail-Adresse ein."
+        },
+        "submit": "Mit Passkey anmelden",
+        "submitting": "Anmeldung wird vorbereitet...",
+        "messages": {
+          "preparing": "Login-Challenge wird vom Server angefordert...",
+          "challengeReady": "Login-Challenge wurde empfangen.",
+          "gettingPasskey": "Der Browser fordert deinen Passkey an...",
+          "passkeyReady": "Der Passkey wurde bestätigt.",
+          "finishing": "Login wird auf dem Server abgeschlossen...",
+          "authenticated": "Du bist jetzt bei DeutschLabor angemeldet."
+        },
+        "errors": {
+          "invalidInput": "Bitte überprüfe deine Eingabe.",
+          "userNotFound": "Für diese E-Mail wurde kein Konto gefunden.",
+          "noPasskeyRegistered": "Für dieses Konto ist kein Passkey registriert.",
+          "forbiddenOrigin": "Dieser Ursprung ist für den Login nicht erlaubt.",
+          "missingRequiredFields": "Die Login-Daten sind unvollständig.",
+          "loginSessionNotFound": "Die Login-Sitzung wurde nicht gefunden. Starte den Login erneut.",
+          "loginSessionExpired": "Die Login-Sitzung ist abgelaufen. Starte den Login erneut.",
+          "assertionValidationFailed": "Die Passkey-Bestätigung konnte nicht geprüft werden.",
+          "passkeyUnsupported": "Dieser Browser unterstützt keine Passkeys.",
+          "passkeyCancelledOrFailed": "Der Passkey wurde nicht bestätigt oder der Vorgang wurde abgebrochen.",
+          "tooManyRequests": "Zu viele Versuche. Bitte warte kurz und versuche es später erneut.",
+          "startFailed": "Der Login konnte nicht vorbereitet werden.",
+          "finishFailed": "Der Login konnte nicht abgeschlossen werden.",
+          "unknown": "Ein unbekannter Fehler ist aufgetreten."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Wie funktioniert der Login?",
+        "text": "Zuerst gibst du deine E-Mail ein. Danach fordert der Browser deinen Passkey an. Nach erfolgreicher Bestätigung erstellt der Server deine Sitzung."
+      }
+    },
+    "register": {
+      "kicker": "Registrierung",
+      "title": "DeutschLabor-Konto erstellen",
+      "description": "Erstelle dein Konto mit E-Mail und Passkey. Im nächsten Schritt wird dein Gerät einen sicheren Passkey erstellen.",
+      "form": {
+        "firstName": {
+          "label": "Vorname",
+          "placeholder": "Dein Vorname",
+          "error": "Bitte gib deinen Vornamen ein."
+        },
+        "lastName": {
+          "label": "Nachname",
+          "placeholder": "Dein Nachname",
+          "error": "Bitte gib deinen Nachnamen ein."
+        },
+        "email": {
+          "label": "E-Mail",
+          "placeholder": "name@example.com",
+          "error": "Bitte gib eine gültige E-Mail-Adresse ein."
+        },
+        "submit": "Mit Passkey registrieren",
+        "submitting": "Registrierung wird vorbereitet...",
+        "messages": {
+          "preparing": "Registrierung wird vorbereitet...",
+          "creatingPasskey": "Bestätige die Erstellung des Passkeys im Browserfenster oder auf deinem Gerät.",
+          "finishing": "Registrierung wird abgeschlossen...",
+          "registered": "Das Konto wurde erstellt. Du bist jetzt bei DeutschLabor angemeldet. Wir haben dir eine E-Mail zur Bestätigung deiner Adresse gesendet."
+        },
+        "errors": {
+          "invalidInput": "Bitte überprüfe deine Eingaben.",
+          "emailAlreadyRegistered": "Diese E-Mail-Adresse ist bereits registriert.",
+          "forbiddenOrigin": "Dieser Origin ist für die Registrierung nicht erlaubt.",
+          "registrationSessionNotFound": "Die Registrierungssitzung wurde nicht gefunden. Starte die Registrierung erneut.",
+          "registrationSessionExpired": "Die Registrierungssitzung ist abgelaufen. Starte die Registrierung erneut.",
+          "passkeyUnsupported": "Dieser Browser oder dieses Gerät unterstützt keine Passkeys.",
+          "passkeyCancelled": "Die Passkey-Erstellung wurde abgebrochen.",
+          "passkeyInvalidState": "Für dieses Konto könnte auf diesem Gerät bereits ein Passkey existieren.",
+          "passkeyCreationFailed": "Der Passkey konnte nicht erstellt werden.",
+          "finishFailed": "Die Registrierung konnte nicht abgeschlossen werden.",
+          "unknown": "Ein unbekannter Fehler ist aufgetreten."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Was passiert als Nächstes?",
+        "text": "Nach dem Absenden fordert der Browser dein Gerät auf, einen Passkey zu erstellen. Danach wird die Registrierung am Server abgeschlossen."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Konto mit Passkey erstellen",
+        "intro": "DeutschLabor verwendet kein Passwort. Stattdessen erstellt dein Gerät einen Passkey — einen sicheren Zugangsschlüssel für dein Konto.",
+        "browserDialog": "Nach dem Klick auf die Schaltfläche öffnet der Browser ein Fenster zur Passkey-Erstellung. Du kannst die Aktion mit deinem Smartphone, Windows Hello, Face ID, Touch ID, PIN oder einer anderen Methode bestätigen, die dein Gerät unterstützt.",
+        "privacy": "DeutschLabor erhält weder deinen Fingerabdruck noch Face ID oder PIN. Diese Daten bleiben auf deinem Gerät. Auf dem Server wird nur der öffentliche Schlüssel gespeichert.",
+        "back": "Zurück",
+        "createPasskey": "Passkey erstellen"
+      }
+    },
+    "verifyEmail": {
+      "kicker": "E-Mail-Bestätigung",
+      "title": "E-Mail-Adresse bestätigen",
+      "checking": "Der Bestätigungslink wird geprüft...",
+      "missingToken": "Der Bestätigungslink ist unvollständig. Das Token fehlt."
+    }
+  }
+}
+</file>
+
+<file path="public/i18n/en.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Learn · Practise · Understand · Speak",
+    "language": "Language",
+    "mainNavigation": "Main navigation"
+  },
+  "nav": {
+    "search": "Search",
+    "training": "Training",
+    "account": "Account"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Register",
+    "emailVerificationNotice": {
+      "title": "Your email is not verified yet.",
+      "message": "We have sent you a verification email. Check your inbox and open the verification link. If the email did not arrive, you can send it again.",
+      "resendAction": "Send email again",
+      "resendSending": "Sending...",
+      "resendSuccess": "The verification email has been sent again.",
+      "resendRateLimited": "Too many attempts. Try again a bit later.",
+      "resendCsrfError": "The security check failed. Reload the page and try again.",
+      "resendError": "The email could not be sent. Try again."
+    }
+  },
+  "pages": {
+    "search": {
+      "kicker": "Dictionary",
+      "title": "Search and understand words",
+      "description": "This will become the main search page of the DeutschLabor Dictionary."
+    },
+    "training": {
+      "kicker": "Training",
+      "title": "Review words with focus",
+      "description": "This will become the training area for searched and saved words."
+    },
+    "account": {
+      "kicker": "Account",
+      "title": "Your personal area",
+      "description": "This will become the area for profile, language settings and security."
+    },
+    "login": {
+      "kicker": "Login",
+      "title": "Log in to DeutschLabor",
+      "description": "Log in with your email and passkey.",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Please enter a valid email address."
+        },
+        "submit": "Log in with passkey",
+        "submitting": "Preparing login...",
+        "messages": {
+          "preparing": "Requesting login challenge from the server...",
+          "challengeReady": "Login challenge was received.",
+          "gettingPasskey": "The browser is requesting your passkey...",
+          "passkeyReady": "Passkey was confirmed.",
+          "finishing": "Finishing login on the server...",
+          "authenticated": "You are now logged in to DeutschLabor."
+        },
+        "errors": {
+          "invalidInput": "Please check your input.",
+          "userNotFound": "No account was found for this email address.",
+          "noPasskeyRegistered": "No passkey is registered for this account.",
+          "forbiddenOrigin": "This origin is not allowed for login.",
+          "missingRequiredFields": "The login data is incomplete.",
+          "loginSessionNotFound": "The login session was not found. Start login again.",
+          "loginSessionExpired": "The login session has expired. Start login again.",
+          "assertionValidationFailed": "The passkey confirmation could not be verified.",
+          "passkeyUnsupported": "This browser does not support passkeys.",
+          "passkeyCancelledOrFailed": "The passkey was not confirmed or the action was cancelled.",
+          "tooManyRequests": "Too many attempts. Please wait and try again later.",
+          "startFailed": "Login could not be prepared.",
+          "finishFailed": "Login could not be completed.",
+          "unknown": "An unknown error occurred."
+        }
+      },
+      "passkeyInfo": {
+        "title": "How does login work?",
+        "text": "First enter your email. Then the browser asks for your passkey. After successful confirmation, the server creates your session."
+      }
+    },
+    "register": {
+      "kicker": "Registration",
+      "title": "Create a DeutschLabor account",
+      "description": "Create your account with email and passkey. In the next step your device will create a secure passkey.",
+      "form": {
+        "firstName": {
+          "label": "First name",
+          "placeholder": "Your first name",
+          "error": "Please enter your first name."
+        },
+        "lastName": {
+          "label": "Last name",
+          "placeholder": "Your last name",
+          "error": "Please enter your last name."
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Please enter a valid email address."
+        },
+        "submit": "Register with passkey",
+        "submitting": "Preparing registration...",
+        "messages": {
+          "preparing": "Preparing registration...",
+          "creatingPasskey": "Confirm passkey creation in the browser window or on your device.",
+          "finishing": "Finishing registration...",
+          "registered": "Your account was created. You are now signed in to DeutschLabor. We sent you an email to verify your address."
+        },
+        "errors": {
+          "invalidInput": "Please check your input.",
+          "emailAlreadyRegistered": "This email address is already registered.",
+          "forbiddenOrigin": "This origin is not allowed for registration.",
+          "registrationSessionNotFound": "The registration session was not found. Start registration again.",
+          "registrationSessionExpired": "The registration session has expired. Start registration again.",
+          "passkeyUnsupported": "This browser or device does not support passkeys.",
+          "passkeyCancelled": "Passkey creation was cancelled.",
+          "passkeyInvalidState": "A passkey for this account may already exist on this device.",
+          "passkeyCreationFailed": "Passkey could not be created.",
+          "finishFailed": "Registration could not be completed.",
+          "unknown": "An unknown error occurred."
+        }
+      },
+      "passkeyInfo": {
+        "title": "What happens next?",
+        "text": "After submitting the form, the browser will ask your device to create a passkey. Then the registration will be completed on the server."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Create account with passkey",
+        "intro": "DeutschLabor does not use a password. Instead, your device creates a passkey — a secure access key for your account.",
+        "browserDialog": "After clicking the button, the browser will open a passkey creation window. You can confirm the action with your phone, Windows Hello, Face ID, Touch ID, PIN, or another method supported by your device.",
+        "privacy": "DeutschLabor does not receive your fingerprint, Face ID, or PIN. This data stays on your device. Only the public key is stored on the server.",
+        "back": "Back",
+        "createPasskey": "Create passkey"
+      }
+    },
+    "verifyEmail": {
+      "kicker": "Email verification",
+      "title": "Verify email address",
+      "checking": "Checking the email verification link...",
+      "missingToken": "The verification link is incomplete. The token is missing."
+    }
+  }
+}
+</file>
+
+<file path="public/i18n/hu.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Tanulni · Gyakorolni · Érteni · Beszélni",
+    "language": "Nyelv",
+    "mainNavigation": "Fő navigáció"
+  },
+  "nav": {
+    "search": "Keresés",
+    "training": "Gyakorlás",
+    "account": "Fiók"
+  },
+  "auth": {
+    "login": "Belépés",
+    "register": "Regisztráció",
+    "emailVerificationNotice": {
+      "title": "Az emailed még nincs megerősítve.",
+      "message": "Elküldtük a megerősítő emailt. Ellenőrizd a postafiókodat, és nyisd meg a megerősítő linket. Ha az email nem érkezett meg, újra elküldheted.",
+      "resendAction": "Email újraküldése",
+      "resendSending": "Küldés...",
+      "resendSuccess": "A megerősítő email újra el lett küldve.",
+      "resendRateLimited": "Túl sok próbálkozás. Próbáld meg kicsit később.",
+      "resendCsrfError": "A biztonsági ellenőrzés sikertelen volt. Töltsd újra az oldalt, és próbáld meg ismét.",
+      "resendError": "Az emailt nem sikerült elküldeni. Próbáld meg újra."
+    }
+  },
+  "pages": {
+    "search": {
+      "kicker": "Szótár",
+      "title": "Szavak keresése és megértése",
+      "description": "Itt készül a DeutschLabor Dictionary fő keresőoldala."
+    },
+    "training": {
+      "kicker": "Gyakorlás",
+      "title": "Szavak célzott ismétlése",
+      "description": "Itt készül a gyakorlási terület a keresett és mentett szavakhoz."
+    },
+    "account": {
+      "kicker": "Fiók",
+      "title": "A személyes felületed",
+      "description": "Itt készül a profil, a nyelvi beállítások és a biztonsági rész."
+    },
+    "login": {
+      "kicker": "Belépés",
+      "title": "Belépés a DeutschLaborba",
+      "description": "Lépj be emaillel és passkey segítségével.",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Adj meg egy érvényes email-címet."
+        },
+        "submit": "Belépés passkey-vel",
+        "submitting": "Belépés előkészítése...",
+        "messages": {
+          "preparing": "Login challenge lekérése a szervertől...",
+          "challengeReady": "A login challenge megérkezett.",
+          "gettingPasskey": "A böngésző kéri a passkey-t...",
+          "passkeyReady": "A passkey megerősítve.",
+          "finishing": "Belépés befejezése a szerveren...",
+          "authenticated": "Most már be vagy jelentkezve a DeutschLaborba."
+        },
+        "errors": {
+          "invalidInput": "Ellenőrizd a megadott adatokat.",
+          "userNotFound": "Ehhez az email-címhez nem található fiók.",
+          "noPasskeyRegistered": "Ehhez a fiókhoz még nincs passkey regisztrálva.",
+          "forbiddenOrigin": "Ez az origin nem engedélyezett a belépéshez.",
+          "missingRequiredFields": "A belépési adatok hiányosak.",
+          "loginSessionNotFound": "A login session nem található. Indítsd újra a belépést.",
+          "loginSessionExpired": "A login session lejárt. Indítsd újra a belépést.",
+          "assertionValidationFailed": "A passkey megerősítését nem sikerült ellenőrizni.",
+          "passkeyUnsupported": "Ez a böngésző nem támogatja a passkey használatát.",
+          "passkeyCancelledOrFailed": "A passkey nincs megerősítve, vagy a művelet meg lett szakítva.",
+          "tooManyRequests": "Túl sok próbálkozás. Várj egy kicsit, majd próbáld újra.",
+          "startFailed": "A belépés előkészítése nem sikerült.",
+          "finishFailed": "A belépést nem sikerült befejezni.",
+          "unknown": "Ismeretlen hiba történt."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Hogyan működik a belépés?",
+        "text": "Először megadod az emailedet. Ezután a böngésző kéri a passkey-t. Sikeres megerősítés után a szerver létrehozza a munkamenetedet."
+      }
+    },
+    "register": {
+      "kicker": "Regisztráció",
+      "title": "DeutschLabor-fiók létrehozása",
+      "description": "Hozz létre fiókot emaillel és passkey segítségével. A következő lépésben az eszközöd létrehoz egy biztonságos passkey-t.",
+      "form": {
+        "firstName": {
+          "label": "Keresztnév",
+          "placeholder": "A keresztneved",
+          "error": "Add meg a keresztneved."
+        },
+        "lastName": {
+          "label": "Vezetéknév",
+          "placeholder": "A vezetékneved",
+          "error": "Add meg a vezetékneved."
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Adj meg egy érvényes email-címet."
+        },
+        "submit": "Regisztráció passkey-vel",
+        "submitting": "Regisztráció előkészítése...",
+        "messages": {
+          "preparing": "Regisztráció előkészítése...",
+          "creatingPasskey": "Erősítsd meg a passkey létrehozását a böngészőablakban vagy az eszközödön.",
+          "finishing": "Regisztráció befejezése...",
+          "registered": "A fiók létrejött. Most már be vagy jelentkezve a DeutschLaborba. Küldtünk egy emailt a címed megerősítéséhez."
+        },
+        "errors": {
+          "invalidInput": "Ellenőrizd a megadott adatokat.",
+          "emailAlreadyRegistered": "Ez az email-cím már regisztrálva van.",
+          "forbiddenOrigin": "Ez az origin nem engedélyezett a regisztrációhoz.",
+          "registrationSessionNotFound": "A regisztrációs munkamenet nem található. Indítsd újra a regisztrációt.",
+          "registrationSessionExpired": "A regisztrációs munkamenet lejárt. Indítsd újra a regisztrációt.",
+          "passkeyUnsupported": "Ez a böngésző vagy eszköz nem támogatja a passkey-t.",
+          "passkeyCancelled": "A passkey létrehozása meg lett szakítva.",
+          "passkeyInvalidState": "Ehhez a fiókhoz már létezhet passkey ezen az eszközön.",
+          "passkeyCreationFailed": "Nem sikerült létrehozni a passkey-t.",
+          "finishFailed": "Nem sikerült befejezni a regisztrációt.",
+          "unknown": "Ismeretlen hiba történt."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Mi történik ezután?",
+        "text": "Az űrlap elküldése után a böngésző megkéri az eszközödet, hogy hozzon létre egy passkey-t. Ezután a regisztráció a szerveren fejeződik be."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Fiók létrehozása passkey-vel",
+        "intro": "A DeutschLabor nem használ jelszót. Ehelyett az eszközöd létrehoz egy passkey-t — egy biztonságos hozzáférési kulcsot a fiókodhoz.",
+        "browserDialog": "A gombra kattintás után a böngésző megnyitja a passkey létrehozására szolgáló ablakot. A műveletet telefonnal, Windows Hello-val, Face ID-val, Touch ID-val, PIN-kóddal vagy az eszközöd által támogatott más módszerrel erősítheted meg.",
+        "privacy": "A DeutschLabor nem kapja meg az ujjlenyomatodat, Face ID-dat vagy PIN-kódodat. Ezek az adatok az eszközödön maradnak. A szerveren csak a nyilvános kulcs kerül tárolásra.",
+        "back": "Vissza",
+        "createPasskey": "Passkey létrehozása"
+      }
+    },
+    "verifyEmail": {
+      "kicker": "Email megerősítés",
+      "title": "Email-cím megerősítése",
+      "checking": "Ellenőrizzük az email-megerősítő linket...",
+      "missingToken": "A megerősítő link hiányos. Hiányzik a token."
+    }
+  }
+}
+</file>
+
+<file path="public/i18n/pl.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Uczyć się · Ćwiczyć · Rozumieć · Mówić",
+    "language": "Język",
+    "mainNavigation": "Główna nawigacja"
+  },
+  "nav": {
+    "search": "Szukaj",
+    "training": "Trening",
+    "account": "Konto"
+  },
+  "auth": {
+    "login": "Logowanie",
+    "register": "Rejestracja",
+    "emailVerificationNotice": {
+      "title": "Twój email nie został jeszcze potwierdzony.",
+      "message": "Wysłaliśmy email z potwierdzeniem. Sprawdź pocztę i otwórz link potwierdzający. Jeśli email nie dotarł, możesz wysłać go ponownie.",
+      "resendAction": "Wyślij email ponownie",
+      "resendSending": "Wysyłanie...",
+      "resendSuccess": "Email potwierdzający został wysłany ponownie.",
+      "resendRateLimited": "Zbyt wiele prób. Spróbuj ponownie trochę później.",
+      "resendCsrfError": "Kontrola bezpieczeństwa nie powiodła się. Odśwież stronę i spróbuj ponownie.",
+      "resendError": "Nie udało się wysłać emaila. Spróbuj ponownie."
+    }
+  },
+  "pages": {
+    "search": {
+      "kicker": "Słownik",
+      "title": "Szukaj i rozumiej słowa",
+      "description": "Tutaj powstanie główna strona wyszukiwania DeutschLabor Dictionary."
+    },
+    "training": {
+      "kicker": "Trening",
+      "title": "Powtarzaj słowa świadomie",
+      "description": "Tutaj powstanie strefa treningu dla wyszukanych i zapisanych słów."
+    },
+    "account": {
+      "kicker": "Konto",
+      "title": "Twoja osobista strefa",
+      "description": "Tutaj powstanie profil, ustawienia języka i bezpieczeństwo."
+    },
+    "login": {
+      "kicker": "Logowanie",
+      "title": "Zaloguj się do DeutschLabor",
+      "description": "Zaloguj się za pomocą emaila i passkey.",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Podaj prawidłowy adres email."
+        },
+        "submit": "Zaloguj się z passkey",
+        "submitting": "Przygotowywanie logowania...",
+        "messages": {
+          "preparing": "Pobieranie login challenge z serwera...",
+          "challengeReady": "Login challenge został odebrany.",
+          "gettingPasskey": "Przeglądarka prosi o twój passkey...",
+          "passkeyReady": "Passkey został potwierdzony.",
+          "finishing": "Kończenie logowania na serwerze...",
+          "authenticated": "Jesteś teraz zalogowany w DeutschLabor."
+        },
+        "errors": {
+          "invalidInput": "Sprawdź wprowadzone dane.",
+          "userNotFound": "Nie znaleziono konta dla tego adresu email.",
+          "noPasskeyRegistered": "Dla tego konta nie zarejestrowano jeszcze passkey.",
+          "forbiddenOrigin": "Ten origin nie jest dozwolony dla logowania.",
+          "missingRequiredFields": "Dane logowania są niepełne.",
+          "loginSessionNotFound": "Nie znaleziono sesji logowania. Rozpocznij logowanie ponownie.",
+          "loginSessionExpired": "Sesja logowania wygasła. Rozpocznij logowanie ponownie.",
+          "assertionValidationFailed": "Nie udało się zweryfikować potwierdzenia passkey.",
+          "passkeyUnsupported": "Ta przeglądarka nie obsługuje passkey.",
+          "passkeyCancelledOrFailed": "Passkey nie został potwierdzony albo akcja została anulowana.",
+          "tooManyRequests": "Zbyt wiele prób. Poczekaj i spróbuj ponownie później.",
+          "startFailed": "Nie udało się przygotować logowania.",
+          "finishFailed": "Nie udało się zakończyć logowania.",
+          "unknown": "Wystąpił nieznany błąd."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Jak działa logowanie?",
+        "text": "Najpierw wpisujesz email. Następnie przeglądarka poprosi o twój passkey. Po udanym potwierdzeniu serwer utworzy twoją sesję."
+      }
+    },
+    "register": {
+      "kicker": "Rejestracja",
+      "title": "Utwórz konto DeutschLabor",
+      "description": "Utwórz konto za pomocą emaila i passkey. W następnym kroku twoje urządzenie utworzy bezpieczny passkey.",
+      "form": {
+        "firstName": {
+          "label": "Imię",
+          "placeholder": "Twoje imię",
+          "error": "Podaj imię."
+        },
+        "lastName": {
+          "label": "Nazwisko",
+          "placeholder": "Twoje nazwisko",
+          "error": "Podaj nazwisko."
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Podaj prawidłowy adres email."
+        },
+        "submit": "Zarejestruj przez passkey",
+        "submitting": "Przygotowywanie rejestracji...",
+        "messages": {
+          "preparing": "Przygotowywanie rejestracji...",
+          "creatingPasskey": "Potwierdź utworzenie passkey w oknie przeglądarki lub na swoim urządzeniu.",
+          "finishing": "Kończenie rejestracji...",
+          "registered": "Konto zostało utworzone. Jesteś teraz zalogowany w DeutschLabor. Wysłaliśmy email do potwierdzenia adresu."
+        },
+        "errors": {
+          "invalidInput": "Sprawdź wprowadzone dane.",
+          "emailAlreadyRegistered": "Ten adres email jest już zarejestrowany.",
+          "forbiddenOrigin": "Ten origin nie jest dozwolony dla rejestracji.",
+          "registrationSessionNotFound": "Nie znaleziono sesji rejestracji. Rozpocznij rejestrację ponownie.",
+          "registrationSessionExpired": "Sesja rejestracji wygasła. Rozpocznij rejestrację ponownie.",
+          "passkeyUnsupported": "Ta przeglądarka lub to urządzenie nie obsługuje passkey.",
+          "passkeyCancelled": "Tworzenie passkey zostało anulowane.",
+          "passkeyInvalidState": "Passkey dla tego konta może już istnieć na tym urządzeniu.",
+          "passkeyCreationFailed": "Nie udało się utworzyć passkey.",
+          "finishFailed": "Nie udało się zakończyć rejestracji.",
+          "unknown": "Wystąpił nieznany błąd."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Co stanie się dalej?",
+        "text": "Po wysłaniu formularza przeglądarka poprosi twoje urządzenie o utworzenie passkey. Następnie rejestracja zostanie zakończona na serwerze."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Tworzenie konta z passkey",
+        "intro": "DeutschLabor nie używa hasła. Zamiast hasła twoje urządzenie utworzy passkey — bezpieczny klucz dostępu do konta.",
+        "browserDialog": "Po kliknięciu przycisku przeglądarka otworzy okno tworzenia passkey. Możesz potwierdzić działanie telefonem, Windows Hello, Face ID, Touch ID, PIN-em albo inną metodą obsługiwaną przez twoje urządzenie.",
+        "privacy": "DeutschLabor nie otrzymuje twojego odcisku palca, Face ID ani PIN-u. Te dane pozostają na twoim urządzeniu. Na serwerze przechowywany jest tylko klucz publiczny.",
+        "back": "Wstecz",
+        "createPasskey": "Utwórz passkey"
+      }
+    },
+    "verifyEmail": {
+      "kicker": "Potwierdzenie emaila",
+      "title": "Potwierdź adres email",
+      "checking": "Sprawdzamy link potwierdzający email...",
+      "missingToken": "Link potwierdzający jest niepełny. Brakuje tokena."
+    }
+  }
+}
+</file>
+
+<file path="public/i18n/ru.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Учить · Тренировать · Понимать · Говорить",
+    "language": "Язык",
+    "mainNavigation": "Главная навигация"
+  },
+  "nav": {
+    "search": "Поиск",
+    "training": "Тренировка",
+    "account": "Кабинет"
+  },
+  "auth": {
+    "login": "Вход",
+    "register": "Регистрация",
+    "emailVerificationNotice": {
+      "title": "Ваш email ещё не подтверждён.",
+      "message": "Мы отправили письмо для подтверждения email. Проверьте почту и откройте ссылку подтверждения. Если письмо не пришло, вы можете отправить его ещё раз.",
+      "resendAction": "Отправить письмо ещё раз",
+      "resendSending": "Отправляем...",
+      "resendSuccess": "Письмо для подтверждения email отправлено ещё раз.",
+      "resendRateLimited": "Слишком много попыток. Попробуйте немного позже.",
+      "resendCsrfError": "Запрос не прошёл проверку безопасности. Обновите страницу и попробуйте ещё раз.",
+      "resendError": "Не удалось отправить письмо. Попробуйте ещё раз."
+    }
+  },
+  "pages": {
+    "search": {
+      "kicker": "Словарь",
+      "title": "Искать и понимать слова",
+      "description": "Здесь будет главная страница поиска DeutschLabor Dictionary."
+    },
+    "training": {
+      "kicker": "Тренировка",
+      "title": "Целенаправленно повторять слова",
+      "description": "Здесь будет зона тренировки для найденных и сохранённых слов."
+    },
+    "account": {
+      "kicker": "Кабинет",
+      "title": "Твоя личная зона",
+      "description": "Здесь будет профиль, языковые настройки и безопасность."
+    },
+    "login": {
+      "kicker": "Вход",
+      "title": "Войти в DeutschLabor",
+      "description": "Войди с помощью email и passkey.",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Введи правильный email-адрес."
+        },
+        "submit": "Войти с passkey",
+        "submitting": "Подготовка входа...",
+        "messages": {
+          "preparing": "Запрашиваем login challenge у сервера...",
+          "challengeReady": "Login challenge получен.",
+          "gettingPasskey": "Браузер запрашивает твой passkey...",
+          "passkeyReady": "Passkey подтверждён.",
+          "finishing": "Завершаем вход на сервере...",
+          "authenticated": "Ты вошёл в DeutschLabor."
+        },
+        "errors": {
+          "invalidInput": "Проверь введённые данные.",
+          "userNotFound": "Аккаунт с этим email не найден.",
+          "noPasskeyRegistered": "Для этого аккаунта ещё не зарегистрирован passkey.",
+          "forbiddenOrigin": "Этот origin не разрешён для входа.",
+          "missingRequiredFields": "Данные для входа неполные.",
+          "loginSessionNotFound": "Login session не найдена. Начни вход заново.",
+          "loginSessionExpired": "Login session истекла. Начни вход заново.",
+          "assertionValidationFailed": "Не удалось проверить passkey-подтверждение.",
+          "passkeyUnsupported": "Этот браузер не поддерживает passkey.",
+          "passkeyCancelledOrFailed": "Passkey не подтверждён или действие отменено.",
+          "tooManyRequests": "Слишком много попыток. Подожди и попробуй позже.",
+          "startFailed": "Не удалось подготовить вход.",
+          "finishFailed": "Не удалось завершить вход.",
+          "unknown": "Произошла неизвестная ошибка."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Как работает вход?",
+        "text": "Сначала ты вводишь email. Затем браузер запрашивает твой passkey. После успешного подтверждения сервер создаёт твою сессию."
+      }
+    },
+    "register": {
+      "kicker": "Регистрация",
+      "title": "Создать аккаунт DeutschLabor",
+      "description": "Создай аккаунт с помощью email и passkey. На следующем шаге твоё устройство создаст безопасный passkey.",
+      "form": {
+        "firstName": {
+          "label": "Имя",
+          "placeholder": "Твоё имя",
+          "error": "Введи имя."
+        },
+        "lastName": {
+          "label": "Фамилия",
+          "placeholder": "Твоя фамилия",
+          "error": "Введи фамилию."
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Введи правильный email-адрес."
+        },
+        "submit": "Зарегистрироваться через passkey",
+        "submitting": "Подготовка регистрации...",
+        "messages": {
+          "preparing": "Подготовка регистрации...",
+          "creatingPasskey": "Подтверди создание passkey в окне браузера или на своём устройстве.",
+          "finishing": "Завершение регистрации...",
+          "registered": "Аккаунт создан. Ты уже вошёл в DeutschLabor. Мы отправили email для подтверждения адреса."
+        },
+        "errors": {
+          "invalidInput": "Проверь введённые данные.",
+          "emailAlreadyRegistered": "Этот email-адрес уже зарегистрирован.",
+          "forbiddenOrigin": "Этот origin не разрешён для регистрации.",
+          "registrationSessionNotFound": "Сессия регистрации не найдена. Начни регистрацию заново.",
+          "registrationSessionExpired": "Сессия регистрации истекла. Начни регистрацию заново.",
+          "passkeyUnsupported": "Этот браузер или устройство не поддерживает passkey.",
+          "passkeyCancelled": "Создание passkey было отменено.",
+          "passkeyInvalidState": "Passkey для этого аккаунта уже может существовать на этом устройстве.",
+          "passkeyCreationFailed": "Не удалось создать passkey.",
+          "finishFailed": "Не удалось завершить регистрацию.",
+          "unknown": "Произошла неизвестная ошибка."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Что будет дальше?",
+        "text": "После отправки формы браузер попросит твоё устройство создать passkey. Затем регистрация будет завершена на сервере."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Создание аккаунта с passkey",
+        "intro": "DeutschLabor не использует пароль. Вместо пароля твоё устройство создаст passkey — безопасный ключ доступа к аккаунту.",
+        "browserDialog": "После нажатия кнопки браузер откроет окно создания passkey. Ты можешь подтвердить действие через телефон, Windows Hello, Face ID, Touch ID, PIN или другой способ, который поддерживает твоё устройство.",
+        "privacy": "DeutschLabor не получает твой отпечаток пальца, Face ID или PIN. Эти данные остаются на твоём устройстве. На сервере хранится только публичный ключ.",
+        "back": "Назад",
+        "createPasskey": "Создать passkey"
+      }
+    },
+    "verifyEmail": {
+      "kicker": "Подтверждение email",
+      "title": "Подтверждение email-адреса",
+      "checking": "Проверяем ссылку для подтверждения email...",
+      "missingToken": "Ссылка для подтверждения неполная. Token отсутствует."
+    }
+  }
+}
+</file>
+
+<file path="public/i18n/uk.json">
+{
+  "app": {
+    "name": "DeutschLabor"
+  },
+  "header": {
+    "brand": "DeutschLabor",
+    "slogan": "Вчити · Тренувати · Розуміти · Говорити",
+    "language": "Мова",
+    "mainNavigation": "Головна навігація"
+  },
+  "nav": {
+    "search": "Пошук",
+    "training": "Тренування",
+    "account": "Кабінет"
+  },
+  "auth": {
+    "login": "Вхід",
+    "register": "Реєстрація",
+    "emailVerificationNotice": {
+      "title": "Ваш email ще не підтверджено.",
+      "message": "Ми надіслали лист для підтвердження email. Перевірте пошту та відкрийте посилання. Якщо лист не прийшов, ви можете надіслати його ще раз.",
+      "resendAction": "Надіслати лист ще раз",
+      "resendSending": "Надсилаємо...",
+      "resendSuccess": "Лист для підтвердження email надіслано ще раз.",
+      "resendRateLimited": "Забагато спроб. Спробуйте трохи пізніше.",
+      "resendCsrfError": "Запит не пройшов перевірку безпеки. Оновіть сторінку і спробуйте ще раз.",
+      "resendError": "Не вдалося надіслати лист. Спробуйте ще раз."
+    }
+  },
+  "pages": {
+    "search": {
+      "kicker": "Словник",
+      "title": "Шукати й розуміти слова",
+      "description": "Тут буде головна сторінка пошуку DeutschLabor Dictionary."
+    },
+    "training": {
+      "kicker": "Тренування",
+      "title": "Цілеспрямовано повторювати слова",
+      "description": "Тут буде зона тренування для знайдених і збережених слів."
+    },
+    "account": {
+      "kicker": "Кабінет",
+      "title": "Твоя особиста зона",
+      "description": "Тут буде профіль, мовні налаштування і безпека."
+    },
+    "login": {
+      "kicker": "Вхід",
+      "title": "Увійти в DeutschLabor",
+      "description": "Увійди за допомогою email і passkey.",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Введи правильну email-адресу."
+        },
+        "submit": "Увійти з passkey",
+        "submitting": "Підготовка входу...",
+        "messages": {
+          "preparing": "Запитуємо login challenge у сервера...",
+          "challengeReady": "Login challenge отримано.",
+          "gettingPasskey": "Браузер запитує твій passkey...",
+          "passkeyReady": "Passkey підтверджено.",
+          "finishing": "Завершуємо вхід на сервері...",
+          "authenticated": "Ти увійшов у DeutschLabor."
+        },
+        "errors": {
+          "invalidInput": "Перевір введені дані.",
+          "userNotFound": "Обліковий запис з цим email не знайдено.",
+          "noPasskeyRegistered": "Для цього облікового запису ще не зареєстровано passkey.",
+          "forbiddenOrigin": "Цей origin не дозволений для входу.",
+          "missingRequiredFields": "Дані для входу неповні.",
+          "loginSessionNotFound": "Login session не знайдено. Почни вхід заново.",
+          "loginSessionExpired": "Login session закінчилась. Почни вхід заново.",
+          "assertionValidationFailed": "Не вдалося перевірити passkey-підтвердження.",
+          "passkeyUnsupported": "Цей браузер не підтримує passkey.",
+          "passkeyCancelledOrFailed": "Passkey не підтверджено або дію скасовано.",
+          "tooManyRequests": "Забагато спроб. Почекай і спробуй пізніше.",
+          "startFailed": "Не вдалося підготувати вхід.",
+          "finishFailed": "Не вдалося завершити вхід.",
+          "unknown": "Сталася невідома помилка."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Як працює вхід?",
+        "text": "Спочатку ти вводиш email. Потім браузер запитує твій passkey. Після успішного підтвердження сервер створює твою сесію."
+      }
+    },
+    "register": {
+      "kicker": "Реєстрація",
+      "title": "Створити акаунт DeutschLabor",
+      "description": "Створи акаунт за допомогою email і passkey. На наступному кроці твій пристрій створить безпечний passkey.",
+      "form": {
+        "firstName": {
+          "label": "Ім’я",
+          "placeholder": "Твоє ім’я",
+          "error": "Введи ім’я."
+        },
+        "lastName": {
+          "label": "Прізвище",
+          "placeholder": "Твоє прізвище",
+          "error": "Введи прізвище."
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "error": "Введи правильну email-адресу."
+        },
+        "submit": "Зареєструватися через passkey",
+        "submitting": "Підготовка реєстрації...",
+        "messages": {
+          "preparing": "Підготовка реєстрації...",
+          "creatingPasskey": "Підтвердь створення passkey у вікні браузера або на своєму пристрої.",
+          "finishing": "Завершення реєстрації...",
+          "registered": "Акаунт створено. Ти вже увійшов у DeutschLabor. Ми надіслали email для підтвердження адреси."
+        },
+        "errors": {
+          "invalidInput": "Перевір введені дані.",
+          "emailAlreadyRegistered": "Ця email-адреса вже зареєстрована.",
+          "forbiddenOrigin": "Цей origin не дозволений для реєстрації.",
+          "registrationSessionNotFound": "Сесію реєстрації не знайдено. Почни реєстрацію ще раз.",
+          "registrationSessionExpired": "Сесія реєстрації закінчилась. Почни реєстрацію ще раз.",
+          "passkeyUnsupported": "Цей браузер або пристрій не підтримує passkey.",
+          "passkeyCancelled": "Створення passkey було скасовано.",
+          "passkeyInvalidState": "Passkey для цього акаунта вже може існувати на цьому пристрої.",
+          "passkeyCreationFailed": "Не вдалося створити passkey.",
+          "finishFailed": "Не вдалося завершити реєстрацію.",
+          "unknown": "Сталася невідома помилка."
+        }
+      },
+      "passkeyInfo": {
+        "title": "Що буде далі?",
+        "text": "Після відправлення форми браузер попросить твій пристрій створити passkey. Потім реєстрація буде завершена на сервері."
+      },
+      "passkeyModal": {
+        "kicker": "Passkey",
+        "title": "Створення акаунта з passkey",
+        "intro": "DeutschLabor не використовує пароль. Замість пароля твій пристрій створить passkey — безпечний ключ доступу для входу в акаунт.",
+        "browserDialog": "Після натискання кнопки браузер відкриє вікно створення passkey. Ти можеш підтвердити дію через телефон, Windows Hello, Face ID, Touch ID, PIN або інший спосіб, який підтримує твій пристрій.",
+        "privacy": "DeutschLabor не отримує твій відбиток пальця, Face ID або PIN. Ці дані залишаються на твоєму пристрої. На сервері зберігається тільки публічний ключ.",
+        "back": "Назад",
+        "createPasskey": "Створити passkey"
+      }
+    },
+    "verifyEmail": {
+      "kicker": "Підтвердження email",
+      "title": "Підтвердження email-адреси",
+      "checking": "Перевіряємо посилання для підтвердження email...",
+      "missingToken": "Посилання для підтвердження неповне. Token відсутній."
+    }
   }
 }
 </file>

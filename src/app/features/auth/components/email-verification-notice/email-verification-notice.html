@@ -5,6 +5,47 @@
     <div class="notice-content">
       <strong>{{ 'auth.emailVerificationNotice.title' | translate }}</strong>
       <p>{{ 'auth.emailVerificationNotice.message' | translate }}</p>
+
+      <div class="notice-actions">
+        <button
+          class="notice-action"
+          type="button"
+          [disabled]="isSending()"
+          (click)="resendVerificationEmail()"
+        >
+          @if (isSending()) {
+            {{ 'auth.emailVerificationNotice.resendSending' | translate }}
+          } @else {
+            {{ 'auth.emailVerificationNotice.resendAction' | translate }}
+          }
+        </button>
+
+        @switch (resendStatus()) {
+          @case ('success') {
+            <p class="notice-feedback is-success">
+              {{ 'auth.emailVerificationNotice.resendSuccess' | translate }}
+            </p>
+          }
+
+          @case ('rate_limited') {
+            <p class="notice-feedback is-error">
+              {{ 'auth.emailVerificationNotice.resendRateLimited' | translate }}
+            </p>
+          }
+
+          @case ('csrf_error') {
+            <p class="notice-feedback is-error">
+              {{ 'auth.emailVerificationNotice.resendCsrfError' | translate }}
+            </p>
+          }
+
+          @case ('error') {
+            <p class="notice-feedback is-error">
+              {{ 'auth.emailVerificationNotice.resendError' | translate }}
+            </p>
+          }
+        }
+      </div>
     </div>
   </section>
 }

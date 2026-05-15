@@ -18,7 +18,13 @@
     "register": "Rejestracja",
     "emailVerificationNotice": {
       "title": "Twój email nie został jeszcze potwierdzony.",
-      "message": "Sprawdź pocztę i otwórz link potwierdzający. Do czasu potwierdzenia część funkcji będzie ograniczona."
+      "message": "Wysłaliśmy email z potwierdzeniem. Sprawdź pocztę i otwórz link potwierdzający. Jeśli email nie dotarł, możesz wysłać go ponownie.",
+      "resendAction": "Wyślij email ponownie",
+      "resendSending": "Wysyłanie...",
+      "resendSuccess": "Email potwierdzający został wysłany ponownie.",
+      "resendRateLimited": "Zbyt wiele prób. Spróbuj ponownie trochę później.",
+      "resendCsrfError": "Kontrola bezpieczeństwa nie powiodła się. Odśwież stronę i spróbuj ponownie.",
+      "resendError": "Nie udało się wysłać emaila. Spróbuj ponownie."
     }
   },
   "pages": {

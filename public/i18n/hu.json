@@ -18,7 +18,13 @@
     "register": "Regisztráció",
     "emailVerificationNotice": {
       "title": "Az emailed még nincs megerősítve.",
-      "message": "Ellenőrizd a postafiókodat, és nyisd meg a megerősítő linket. A megerősítésig néhány funkció korlátozott marad."
+      "message": "Elküldtük a megerősítő emailt. Ellenőrizd a postafiókodat, és nyisd meg a megerősítő linket. Ha az email nem érkezett meg, újra elküldheted.",
+      "resendAction": "Email újraküldése",
+      "resendSending": "Küldés...",
+      "resendSuccess": "A megerősítő email újra el lett küldve.",
+      "resendRateLimited": "Túl sok próbálkozás. Próbáld meg kicsit később.",
+      "resendCsrfError": "A biztonsági ellenőrzés sikertelen volt. Töltsd újra az oldalt, és próbáld meg ismét.",
+      "resendError": "Az emailt nem sikerült elküldeni. Próbáld meg újra."
     }
   },
   "pages": {

@@ -45,3 +45,47 @@
   font-size: var(--app-font-size-small);
   line-height: 1.45;
 }
+
+.notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.notice-action {
+  border: 1px solid #f59e0b;
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  background: #f59e0b;
+  color: #111827;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.notice-action:hover:not(:disabled) {
+  background: #d97706;
+  border-color: #d97706;
+}
+
+.notice-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.notice-feedback {
+  margin: 0;
+  font-size: var(--app-font-size-small);
+  line-height: 1.4;
+}
+
+.notice-feedback.is-success {
+  color: #166534;
+}
+
+.notice-feedback.is-error {
+  color: #991b1b;
+}

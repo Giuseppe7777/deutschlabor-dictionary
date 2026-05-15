@@ -18,7 +18,13 @@
     "register": "Registrieren",
     "emailVerificationNotice": {
       "title": "Deine E-Mail ist noch nicht bestätigt.",
-      "message": "Prüfe dein Postfach und öffne den Bestätigungslink. Bis zur Bestätigung bleiben einige Funktionen eingeschränkt."
+      "message": "Wir haben dir eine E-Mail zur Bestätigung gesendet. Prüfe dein Postfach und öffne den Bestätigungslink. Wenn die E-Mail nicht angekommen ist, kannst du sie erneut senden.",
+      "resendAction": "E-Mail erneut senden",
+      "resendSending": "Wird gesendet...",
+      "resendSuccess": "Die Bestätigungs-E-Mail wurde erneut gesendet.",
+      "resendRateLimited": "Zu viele Versuche. Versuche es etwas später erneut.",
+      "resendCsrfError": "Die Sicherheitsprüfung ist fehlgeschlagen. Lade die Seite neu und versuche es erneut.",
+      "resendError": "Die E-Mail konnte nicht gesendet werden. Versuche es erneut."
     }
   },
   "pages": {

@@ -3,10 +3,11 @@ import { provideHttpClient, withFetch, withInterceptors, } from '@angular/common
 import { provideRouter } from '@angular/router';
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
-import { acceptLanguageInterceptor } from './core/i18n/accept-language.interceptor';
+import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 
 import { routes } from './app.routes';
-import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
+import { acceptLanguageInterceptor } from './core/i18n/accept-language.interceptor';
+import { csrfTokenInterceptor } from './core/http/csrf-token.interceptor';
 import { DEFAULT_INTERFACE_LANGUAGE } from './core/i18n/interface-language';
 
 export const appConfig: ApplicationConfig = {
@@ -14,7 +15,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideClientHydration(withEventReplay()),
-    provideHttpClient(withFetch(), withInterceptors([acceptLanguageInterceptor]),),
+    provideHttpClient(withFetch(), withInterceptors([acceptLanguageInterceptor, csrfTokenInterceptor]),),
 
     provideTranslateService({
       loader: provideTranslateHttpLoader({

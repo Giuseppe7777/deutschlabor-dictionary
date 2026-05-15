@@ -18,7 +18,13 @@
     "register": "Register",
     "emailVerificationNotice": {
       "title": "Your email is not verified yet.",
-      "message": "Check your inbox and open the verification link. Until verification, some features remain limited."
+      "message": "We have sent you a verification email. Check your inbox and open the verification link. If the email did not arrive, you can send it again.",
+      "resendAction": "Send email again",
+      "resendSending": "Sending...",
+      "resendSuccess": "The verification email has been sent again.",
+      "resendRateLimited": "Too many attempts. Try again a bit later.",
+      "resendCsrfError": "The security check failed. Reload the page and try again.",
+      "resendError": "The email could not be sent. Try again."
     }
   },
   "pages": {

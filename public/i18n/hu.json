@@ -150,7 +150,7 @@
       "invalidOrExpired": "A megerősítő link érvénytelen vagy lejárt. Küldd el újra a megerősítő emailt.",
       "generalError": "Az emailt nem sikerült megerősíteni. Próbáld meg később.",
       "alreadyVerified": "Az email már meg volt erősítve. A teljes DeutschLabor-hozzáférés aktív.",
-      "invalid": "A megerősítő link érvénytelen. Küldd el újra a megerősítő emailt.",
+      "invalid": "A megerősítő link érvénytelen. Küldd el újra a megerősítő emailt. Ha már kértél új emailt, a legutóbbi emailben lévő linket nyisd meg.",
       "expired": "A megerősítő link lejárt. Küldd el újra a megerősítő emailt."
     }
   }

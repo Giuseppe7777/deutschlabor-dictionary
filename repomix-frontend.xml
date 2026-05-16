@@ -125,80 +125,6 @@ tsconfig.spec.json
 <files>
 This section contains the contents of the repository's files.
 
-<file path="src/app/features/auth/pages/verify-email-page/verify-email-page.css">
-.verify-email-page {
-  max-width: 44rem;
-  padding: clamp(1.5rem, 4vw, 3rem);
-  border: 1px solid var(--app-color-border);
-  border-radius: 1.5rem;
-  background: var(--app-color-surface);
-}
-
-.page-kicker {
-  margin: 0 0 0.75rem;
-  color: var(--app-color-text-muted);
-  font-size: var(--app-font-size-small);
-  font-weight: var(--app-font-weight-bold);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.verify-email-page h1 {
-  margin: 0;
-  color: var(--app-color-text);
-  font-size: clamp(2rem, 4vw, 3rem);
-  line-height: 1.05;
-}
-
-.verify-email-message {
-  margin: 1rem 0 0;
-  color: var(--app-color-text-muted);
-  font-size: var(--app-font-size-body);
-  line-height: 1.6;
-}
-
-.verify-email-message.is-error {
-  color: #991b1b;
-}
-</file>
-
-<file path="src/app/features/auth/pages/verify-email-page/verify-email-page.html">
-<section class="verify-email-page">
-  <p class="page-kicker">{{ 'pages.verifyEmail.kicker' | translate }}</p>
-  <h1>{{ 'pages.verifyEmail.title' | translate }}</h1>
-
-  @if (hasToken()) {
-    <p class="verify-email-message">
-      {{ 'pages.verifyEmail.checking' | translate }}
-    </p>
-  } @else {
-    <p class="verify-email-message is-error">
-      {{ 'pages.verifyEmail.missingToken' | translate }}
-    </p>
-  }
-</section>
-</file>
-
-<file path="src/app/features/auth/pages/verify-email-page/verify-email-page.ts">
-import { Component, computed, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
-
-@Component({
-  selector: 'app-verify-email-page',
-  imports: [TranslatePipe],
-  templateUrl: './verify-email-page.html',
-  styleUrl: './verify-email-page.css',
-})
-export class VerifyEmailPage {
-  private readonly route = inject(ActivatedRoute);
-
-  private readonly token = this.route.snapshot.queryParamMap.get('token');
-
-  readonly hasToken = computed(() => typeof this.token === 'string' && this.token.length > 0);
-}
-</file>
-
 <file path=".editorconfig">
 # Editor configuration, see https://editorconfig.org
 root = true
@@ -789,6 +715,217 @@ export interface CurrentUser {
   roles: string[];
   isEmailVerified: boolean;
   emailVerifiedAt: string | null;
+}
+</file>
+
+<file path="src/app/features/auth/pages/verify-email-page/verify-email-page.css">
+.verify-email-page {
+  max-width: 44rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border: 1px solid var(--app-color-border);
+  border-radius: 1.5rem;
+  background: var(--app-color-surface);
+}
+
+.page-kicker {
+  margin: 0 0 0.75rem;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.verify-email-page h1 {
+  margin: 0;
+  color: var(--app-color-text);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05;
+}
+
+.verify-email-message {
+  margin: 1rem 0 0;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-body);
+  line-height: 1.6;
+}
+
+.verify-email-message.is-error {
+  color: #991b1b;
+}
+
+.verify-email-message.is-success {
+  color: #166534;
+}
+</file>
+
+<file path="src/app/features/auth/pages/verify-email-page/verify-email-page.html">
+<section class="verify-email-page">
+  <p class="page-kicker">{{ 'pages.verifyEmail.kicker' | translate }}</p>
+  <h1>{{ 'pages.verifyEmail.title' | translate }}</h1>
+
+  @switch (status()) {
+    @case ('checking') {
+      <p class="verify-email-message">
+        {{ 'pages.verifyEmail.checking' | translate }}
+      </p>
+    }
+
+    @case ('success') {
+      <p class="verify-email-message is-success">
+        {{ 'pages.verifyEmail.success' | translate }}
+      </p>
+    }
+
+    @case ('already_verified') {
+      <p class="verify-email-message is-success">
+        {{ 'pages.verifyEmail.alreadyVerified' | translate }}
+      </p>
+    }
+
+    @case ('missing_token') {
+      <p class="verify-email-message is-error">
+        {{ 'pages.verifyEmail.missingToken' | translate }}
+      </p>
+    }
+
+    @case ('invalid') {
+      <p class="verify-email-message is-error">
+        {{ 'pages.verifyEmail.invalid' | translate }}
+      </p>
+    }
+
+    @case ('expired') {
+      <p class="verify-email-message is-error">
+        {{ 'pages.verifyEmail.expired' | translate }}
+      </p>
+    }
+
+    @case ('error') {
+      <p class="verify-email-message is-error">
+        {{ 'pages.verifyEmail.generalError' | translate }}
+      </p>
+    }
+  }
+</section>
+</file>
+
+<file path="src/app/features/auth/pages/verify-email-page/verify-email-page.ts">
+import { isPlatformBrowser } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import {
+  Component,
+  computed,
+  inject,
+  OnInit,
+  PLATFORM_ID,
+  signal,
+} from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
+
+import { AuthApiService } from '../../services/auth-api.service';
+import { AuthStateService } from '../../services/auth-state.service';
+
+type VerifyEmailStatus =
+  | 'checking'
+  | 'success'
+  | 'already_verified'
+  | 'missing_token'
+  | 'invalid'
+  | 'expired'
+  | 'error';
+
+type VerifyEmailResponse = {
+  message?: string;
+};
+
+type VerifyEmailErrorBody = {
+  message?: string;
+};
+
+@Component({
+  selector: 'app-verify-email-page',
+  imports: [TranslatePipe],
+  templateUrl: './verify-email-page.html',
+  styleUrl: './verify-email-page.css',
+})
+export class VerifyEmailPage implements OnInit {
+  private readonly authApi = inject(AuthApiService);
+  private readonly authState = inject(AuthStateService);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly route = inject(ActivatedRoute);
+
+  private readonly token = this.route.snapshot.queryParamMap.get('token');
+
+  readonly status = signal<VerifyEmailStatus>('checking');
+
+  readonly hasToken = computed(
+    () => typeof this.token === 'string' && this.token.length > 0,
+  );
+
+  ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    if (!this.hasToken()) {
+      this.status.set('missing_token');
+      return;
+    }
+
+    this.verifyEmailToken(this.token as string);
+  }
+
+  private verifyEmailToken(token: string): void {
+    this.status.set('checking');
+
+    this.authApi.verifyEmail({ token }).subscribe({
+      next: (response: VerifyEmailResponse) => {
+        this.status.set(this.resolveSuccessStatus(response));
+        this.authState.loadCurrentUser();
+      },
+      error: (error: unknown) => {
+        this.status.set(this.resolveVerifyError(error));
+      },
+    });
+  }
+
+  private resolveSuccessStatus(response: VerifyEmailResponse): VerifyEmailStatus {
+    if (response.message === 'email_already_verified') {
+      return 'already_verified';
+    }
+
+    return 'success';
+  }
+
+  private resolveVerifyError(error: unknown): VerifyEmailStatus {
+    if (!(error instanceof HttpErrorResponse)) {
+      return 'error';
+    }
+
+    const errorBody = error.error as VerifyEmailErrorBody | null | undefined;
+    const backendMessage =
+      typeof errorBody?.message === 'string' ? errorBody.message : '';
+
+    if (
+      backendMessage === 'verification_token_required' ||
+      backendMessage === 'verification_token_too_long' ||
+      backendMessage === 'verification_token_invalid'
+    ) {
+      return 'invalid';
+    }
+
+    if (backendMessage === 'verification_token_expired') {
+      return 'expired';
+    }
+
+    if (backendMessage === 'verification_token_invalid_or_expired') {
+      return 'invalid';
+    }
+
+    return 'error';
+  }
 }
 </file>
 
@@ -2844,79 +2981,6 @@ a {
 </main>
 </file>
 
-<file path="src/app/app.routes.ts">
-import { Routes } from '@angular/router';
-
-import { DEFAULT_INTERFACE_LANGUAGE } from './core/i18n/interface-language';
-import { interfaceLanguageUrlMatcher } from './core/i18n/interface-language-url.matcher';
-
-export const routes: Routes = [
-  {
-    path: '',
-    pathMatch: 'full',
-    redirectTo: DEFAULT_INTERFACE_LANGUAGE,
-  },
-  {
-    path: 'verify-email',
-    loadComponent: () =>
-      import('./features/auth/pages/verify-email-page/verify-email-page').then(
-        (m) => m.VerifyEmailPage,
-      ),
-  },
-  {
-    matcher: interfaceLanguageUrlMatcher,
-    children: [
-      {
-        path: '',
-        loadComponent: () =>
-          import('./features/dictionary/pages/search-page/search-page').then(
-            (m) => m.SearchPage,
-          ),
-      },
-      {
-        path: 'training',
-        loadComponent: () =>
-          import('./features/training/pages/training-page/training-page').then(
-            (m) => m.TrainingPage,
-          ),
-      },
-      {
-        path: 'account',
-        loadComponent: () =>
-          import('./features/account/pages/account-page/account-page').then(
-            (m) => m.AccountPage,
-          ),
-      },
-      {
-        path: 'login',
-        loadComponent: () =>
-          import('./features/auth/pages/login-page/login-page').then(
-            (m) => m.LoginPage,
-          ),
-      },
-      {
-        path: 'register',
-        loadComponent: () =>
-          import('./features/auth/pages/register-page/register-page').then(
-            (m) => m.RegisterPage,
-          ),
-      },
-      {
-        path: 'verify-email',
-        loadComponent: () =>
-          import('./features/auth/pages/verify-email-page/verify-email-page').then(
-            (m) => m.VerifyEmailPage,
-          ),
-      },
-    ],
-  },
-  {
-    path: '**',
-    redirectTo: DEFAULT_INTERFACE_LANGUAGE,
-  },
-];
-</file>
-
 <file path="src/app/features/auth/models/auth-api.models.ts">
 import { CurrentUser } from './current-user';
 
@@ -3710,6 +3774,79 @@ export const appConfig: ApplicationConfig = {
 };
 </file>
 
+<file path="src/app/app.routes.ts">
+import { Routes } from '@angular/router';
+
+import { DEFAULT_INTERFACE_LANGUAGE } from './core/i18n/interface-language';
+import { interfaceLanguageUrlMatcher } from './core/i18n/interface-language-url.matcher';
+
+export const routes: Routes = [
+  {
+    path: '',
+    pathMatch: 'full',
+    redirectTo: DEFAULT_INTERFACE_LANGUAGE,
+  },
+  {
+    path: 'verify-email',
+    loadComponent: () =>
+      import('./features/auth/pages/verify-email-page/verify-email-page').then(
+        (m) => m.VerifyEmailPage,
+      ),
+  },
+  {
+    matcher: interfaceLanguageUrlMatcher,
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./features/dictionary/pages/search-page/search-page').then(
+            (m) => m.SearchPage,
+          ),
+      },
+      {
+        path: 'training',
+        loadComponent: () =>
+          import('./features/training/pages/training-page/training-page').then(
+            (m) => m.TrainingPage,
+          ),
+      },
+      {
+        path: 'account',
+        loadComponent: () =>
+          import('./features/account/pages/account-page/account-page').then(
+            (m) => m.AccountPage,
+          ),
+      },
+      {
+        path: 'login',
+        loadComponent: () =>
+          import('./features/auth/pages/login-page/login-page').then(
+            (m) => m.LoginPage,
+          ),
+      },
+      {
+        path: 'register',
+        loadComponent: () =>
+          import('./features/auth/pages/register-page/register-page').then(
+            (m) => m.RegisterPage,
+          ),
+      },
+      {
+        path: 'verify-email',
+        loadComponent: () =>
+          import('./features/auth/pages/verify-email-page/verify-email-page').then(
+            (m) => m.VerifyEmailPage,
+          ),
+      },
+    ],
+  },
+  {
+    path: '**',
+    redirectTo: DEFAULT_INTERFACE_LANGUAGE,
+  },
+];
+</file>
+
 <file path="src/app/layout/header/header.css">
 .app-header {
   display: grid;
@@ -4276,7 +4413,13 @@ export class Header {
       "kicker": "E-Mail-Bestätigung",
       "title": "E-Mail-Adresse bestätigen",
       "checking": "Der Bestätigungslink wird geprüft...",
-      "missingToken": "Der Bestätigungslink ist unvollständig. Das Token fehlt."
+      "missingToken": "Der Bestätigungslink ist unvollständig. Das Token fehlt.",
+      "success": "Deine E-Mail wurde erfolgreich bestätigt. Der volle Zugriff auf DeutschLabor ist jetzt aktiv.",
+      "invalidOrExpired": "Der Bestätigungslink ist ungültig oder abgelaufen. Sende die E-Mail zur Bestätigung erneut.",
+      "generalError": "Die E-Mail konnte nicht bestätigt werden. Versuche es später erneut.",
+      "alreadyVerified": "Deine E-Mail war bereits bestätigt. Der volle Zugriff auf DeutschLabor ist aktiv.",
+      "invalid": "Der Bestätigungslink ist ungültig. Sende die Bestätigungs-E-Mail erneut.",
+      "expired": "Der Bestätigungslink ist abgelaufen. Sende die Bestätigungs-E-Mail erneut."
     }
   }
 }
@@ -4430,7 +4573,13 @@ export class Header {
       "kicker": "Email verification",
       "title": "Verify email address",
       "checking": "Checking the email verification link...",
-      "missingToken": "The verification link is incomplete. The token is missing."
+      "missingToken": "The verification link is incomplete. The token is missing.",
+      "success": "Your email has been verified successfully. Full access to DeutschLabor is now active.",
+      "invalidOrExpired": "The verification link is invalid or expired. Send the verification email again.",
+      "generalError": "The email could not be verified. Try again later.",
+      "alreadyVerified": "Your email was already verified. Full access to DeutschLabor is active.",
+      "invalid": "The verification link is invalid. Send the verification email again.",
+      "expired": "The verification link has expired. Send the verification email again."
     }
   }
 }
@@ -4584,7 +4733,13 @@ export class Header {
       "kicker": "Email megerősítés",
       "title": "Email-cím megerősítése",
       "checking": "Ellenőrizzük az email-megerősítő linket...",
-      "missingToken": "A megerősítő link hiányos. Hiányzik a token."
+      "missingToken": "A megerősítő link hiányos. Hiányzik a token.",
+      "success": "Az email sikeresen meg lett erősítve. A DeutschLabor teljes hozzáférése most aktív.",
+      "invalidOrExpired": "A megerősítő link érvénytelen vagy lejárt. Küldd el újra a megerősítő emailt.",
+      "generalError": "Az emailt nem sikerült megerősíteni. Próbáld meg később.",
+      "alreadyVerified": "Az email már meg volt erősítve. A teljes DeutschLabor-hozzáférés aktív.",
+      "invalid": "A megerősítő link érvénytelen. Küldd el újra a megerősítő emailt.",
+      "expired": "A megerősítő link lejárt. Küldd el újra a megerősítő emailt."
     }
   }
 }
@@ -4738,7 +4893,13 @@ export class Header {
       "kicker": "Potwierdzenie emaila",
       "title": "Potwierdź adres email",
       "checking": "Sprawdzamy link potwierdzający email...",
-      "missingToken": "Link potwierdzający jest niepełny. Brakuje tokena."
+      "missingToken": "Link potwierdzający jest niepełny. Brakuje tokena.",
+      "success": "Email został pomyślnie potwierdzony. Pełny dostęp do DeutschLabor jest teraz aktywny.",
+      "invalidOrExpired": "Link potwierdzający jest nieprawidłowy albo wygasł. Wyślij email potwierdzający ponownie.",
+      "generalError": "Nie udało się potwierdzić emaila. Spróbuj ponownie później.",
+      "alreadyVerified": "Email był już potwierdzony. Pełny dostęp do DeutschLabor jest aktywny.",
+      "invalid": "Link potwierdzający jest nieprawidłowy. Wyślij email potwierdzający ponownie.",
+      "expired": "Link potwierdzający wygasł. Wyślij email potwierdzający ponownie."
     }
   }
 }
@@ -4892,7 +5053,13 @@ export class Header {
       "kicker": "Подтверждение email",
       "title": "Подтверждение email-адреса",
       "checking": "Проверяем ссылку для подтверждения email...",
-      "missingToken": "Ссылка для подтверждения неполная. Token отсутствует."
+      "missingToken": "Ссылка для подтверждения неполная. Token отсутствует.",
+      "success": "Email успешно подтверждён. Полный доступ к функциям DeutschLabor активирован.",
+      "invalidOrExpired": "Ссылка для подтверждения недействительна или истекла. Отправьте письмо для подтверждения ещё раз.",
+      "generalError": "Не удалось подтвердить email. Попробуйте позже.",
+      "alreadyVerified": "Email уже был подтверждён. Полный доступ к функциям DeutschLabor активен.",
+      "invalid": "Ссылка для подтверждения недействительна. Отправьте письмо для подтверждения ещё раз.",
+      "expired": "Срок действия ссылки для подтверждения истёк. Отправьте письмо для подтверждения ещё раз."
     }
   }
 }
@@ -5046,7 +5213,13 @@ export class Header {
       "kicker": "Підтвердження email",
       "title": "Підтвердження email-адреси",
       "checking": "Перевіряємо посилання для підтвердження email...",
-      "missingToken": "Посилання для підтвердження неповне. Token відсутній."
+      "missingToken": "Посилання для підтвердження неповне. Token відсутній.",
+      "success": "Email успішно підтверджено. Повний доступ до функцій DeutschLabor активовано.",
+      "invalidOrExpired": "Посилання для підтвердження недійсне або протерміноване. Спробуйте надіслати лист ще раз.",
+      "generalError": "Не вдалося підтвердити email. Спробуйте пізніше.",
+      "alreadyVerified": "Email уже був підтверджений. Повний доступ до функцій DeutschLabor активний.",
+      "invalid": "Посилання для підтвердження недійсне. Спробуйте надіслати лист ще раз.",
+      "expired": "Посилання для підтвердження протерміноване. Надішліть лист для підтвердження ще раз."
     }
   }
 }

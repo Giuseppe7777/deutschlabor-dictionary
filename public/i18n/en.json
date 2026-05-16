@@ -150,7 +150,7 @@
       "invalidOrExpired": "The verification link is invalid or expired. Send the verification email again.",
       "generalError": "The email could not be verified. Try again later.",
       "alreadyVerified": "Your email was already verified. Full access to DeutschLabor is active.",
-      "invalid": "The verification link is invalid. Send the verification email again.",
+      "invalid": "The verification link is invalid. Send the verification email again. If you have already requested a new email, open the link from the latest email.",
       "expired": "The verification link has expired. Send the verification email again."
     }
   }

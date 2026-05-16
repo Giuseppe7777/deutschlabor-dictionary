@@ -150,7 +150,7 @@
       "invalidOrExpired": "Der Bestätigungslink ist ungültig oder abgelaufen. Sende die E-Mail zur Bestätigung erneut.",
       "generalError": "Die E-Mail konnte nicht bestätigt werden. Versuche es später erneut.",
       "alreadyVerified": "Deine E-Mail war bereits bestätigt. Der volle Zugriff auf DeutschLabor ist aktiv.",
-      "invalid": "Der Bestätigungslink ist ungültig. Sende die Bestätigungs-E-Mail erneut.",
+      "invalid": "Der Bestätigungslink ist ungültig. Sende die Bestätigungs-E-Mail erneut. Wenn du bereits eine neue E-Mail angefordert hast, öffne den Link aus der neuesten E-Mail.",
       "expired": "Der Bestätigungslink ist abgelaufen. Sende die Bestätigungs-E-Mail erneut."
     }
   }

@@ -150,7 +150,7 @@
       "invalidOrExpired": "Link potwierdzający jest nieprawidłowy albo wygasł. Wyślij email potwierdzający ponownie.",
       "generalError": "Nie udało się potwierdzić emaila. Spróbuj ponownie później.",
       "alreadyVerified": "Email był już potwierdzony. Pełny dostęp do DeutschLabor jest aktywny.",
-      "invalid": "Link potwierdzający jest nieprawidłowy. Wyślij email potwierdzający ponownie.",
+      "invalid": "Link potwierdzający jest nieprawidłowy. Wyślij email potwierdzający ponownie. Jeśli już poproszono o nowy email, otwórz link z najnowszej wiadomości.",
       "expired": "Link potwierdzający wygasł. Wyślij email potwierdzający ponownie."
     }
   }

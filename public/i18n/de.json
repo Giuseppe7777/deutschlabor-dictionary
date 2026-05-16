@@ -16,9 +16,12 @@
   "auth": {
     "login": "Anmelden",
     "register": "Registrieren",
+    "logout": "Abmelden",
+    "logoutPending": "Wird abgemeldet...",
+    "logoutError": "Abmeldung fehlgeschlagen. Lade die Seite neu und versuche es erneut.",
     "emailVerificationNotice": {
       "title": "Deine E-Mail ist noch nicht bestätigt.",
-      "message": "Wir haben dir eine E-Mail zur Bestätigung gesendet. Prüfe dein Postfach und öffne den Bestätigungslink. Wenn die E-Mail nicht angekommen ist, kannst du sie erneut senden.",
+      "message": "Mit der Bestätigung deiner E-Mail erhältst du vollen Zugriff auf die Wörterbuch- und Worttrainingsfunktionen. Wir haben dir eine Bestätigungs-E-Mail gesendet. Prüfe dein Postfach und öffne den Link. Wenn die E-Mail nicht angekommen ist, kannst du sie erneut senden.",
       "resendAction": "E-Mail erneut senden",
       "resendSending": "Wird gesendet...",
       "resendSuccess": "Die Bestätigungs-E-Mail wurde erneut gesendet.",

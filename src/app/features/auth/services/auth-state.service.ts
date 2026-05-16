@@ -1,4 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
+import { Observable, tap } from 'rxjs';
 
 import {
   AuthState,
@@ -7,6 +8,7 @@ import {
   toAuthenticatedState,
   toAuthErrorState,
 } from '../models/auth-state.models';
+import { LogoutResponse } from '../models/auth-api.models';
 import { AuthApiService } from './auth-api.service';
 
 @Injectable({
@@ -57,6 +59,14 @@ export class AuthStateService {
         this.stateSignal.set(toAuthErrorState('auth_state_load_failed'));
       },
     });
+  }
+
+  logout(): Observable<LogoutResponse> {
+    return this.authApi.logout().pipe(
+      tap(() => {
+        this.stateSignal.set(toAnonymousState());
+      }),
+    );
   }
 
   clearAuthenticatedUser(): void {

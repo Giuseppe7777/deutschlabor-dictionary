@@ -16,9 +16,12 @@
   "auth": {
     "login": "Belépés",
     "register": "Regisztráció",
+    "logout": "Kijelentkezés",
+    "logoutPending": "Kijelentkezés...",
+    "logoutError": "A kijelentkezés nem sikerült. Töltsd újra az oldalt, és próbáld meg újra.",
     "emailVerificationNotice": {
       "title": "Az emailed még nincs megerősítve.",
-      "message": "Elküldtük a megerősítő emailt. Ellenőrizd a postafiókodat, és nyisd meg a megerősítő linket. Ha az email nem érkezett meg, újra elküldheted.",
+      "message": "Az email megerősítése teljes hozzáférést ad a szótár és a szótanulás funkcióihoz. Elküldtük a megerősítő emailt. Ellenőrizd a postafiókodat, és nyisd meg a linket. Ha az email nem érkezett meg, újra elküldheted.",
       "resendAction": "Email újraküldése",
       "resendSending": "Küldés...",
       "resendSuccess": "A megerősítő email újra el lett küldve.",

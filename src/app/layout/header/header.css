@@ -142,8 +142,15 @@
 }
 
 .user-area {
+  display: grid;
+  justify-items: end;
+  gap: 0.35rem;
+}
+
+.user-session {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
 }
 
 .user-chip {
@@ -184,6 +191,35 @@
   white-space: nowrap;
 }
 
+.logout-button {
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  background: #ffffff;
+  color: #991b1b;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.logout-button:hover:not(:disabled) {
+  border-color: #991b1b;
+  background: #fee2e2;
+}
+
+.logout-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.logout-error {
+  margin: 0;
+  color: #991b1b;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-medium);
+}
+
 @media (max-width: 900px) {
   .app-header {
     display: flex;
@@ -205,6 +241,14 @@
   .header-actions {
     justify-self: auto;
   }
+
+    .user-area {
+    justify-items: start;
+  }
+
+  .user-session {
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 700px) {
@@ -225,7 +269,8 @@
 
   .main-nav a,
   .auth-links a,
-  .user-chip {
+  .user-chip,
+  .logout-button {
     min-width: auto;
   }
 }

@@ -1,6 +1,7 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { finalize } from 'rxjs';
 
 import { InterfaceLanguageService } from '../../core/i18n/interface-language.service';
 import { InterfaceLanguage } from '../../core/i18n/interface-language';
@@ -24,6 +25,9 @@ export class Header {
   readonly isAuthenticated = this.authState.isAuthenticated;
   readonly currentUser = this.authState.user;
 
+  readonly isLogoutPending = signal(false);
+  readonly logoutErrorKey = signal<string | null>(null);
+
   readonly userEmail = computed(() => this.currentUser()?.email ?? '');
 
   readonly userInitial = computed(() => {
@@ -42,6 +46,37 @@ export class Header {
     const targetUrl = this.buildUrlWithLanguage(language);
 
     void this.router.navigateByUrl(targetUrl);
+  }
+
+  logout(): void {
+    if (this.isLogoutPending()) {
+      return;
+    }
+
+    this.logoutErrorKey.set(null);
+    this.isLogoutPending.set(true);
+
+    this.authState
+      .logout()
+      .pipe(
+        finalize(() => {
+          this.isLogoutPending.set(false);
+        }),
+      )
+      .subscribe({
+        next: () => {
+          void this.router.navigate(this.localizedPath(''));
+        },
+        error: (error) => {
+          if (error?.status === 401) {
+            this.authState.clearAuthenticatedUser();
+            void this.router.navigate(this.localizedPath(''));
+            return;
+          }
+
+          this.logoutErrorKey.set('auth.logoutError');
+        },
+      });
   }
 
   private buildUrlWithLanguage(language: InterfaceLanguage): string {

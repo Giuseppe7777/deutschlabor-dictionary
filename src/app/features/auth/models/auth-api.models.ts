@@ -80,10 +80,8 @@ export interface LoginFinishResponse {
     lastName: string;
   };
 }
-
 export interface LogoutResponse {
-  status: 'ok';
-  message: string;
+  status: 'logged out';
 }
 
 export interface ResendVerificationEmailResponse {

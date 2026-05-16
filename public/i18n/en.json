@@ -16,9 +16,12 @@
   "auth": {
     "login": "Log in",
     "register": "Register",
+    "logout": "Log out",
+    "logoutPending": "Logging out...",
+    "logoutError": "Logout failed. Reload the page and try again.",
     "emailVerificationNotice": {
       "title": "Your email is not verified yet.",
-      "message": "We have sent you a verification email. Check your inbox and open the verification link. If the email did not arrive, you can send it again.",
+      "message": "Verifying your email gives you full access to the dictionary and word training features. We have sent you a verification email. Check your inbox and open the link. If the email did not arrive, you can send it again.",
       "resendAction": "Send email again",
       "resendSending": "Sending...",
       "resendSuccess": "The verification email has been sent again.",

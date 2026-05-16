@@ -16,9 +16,12 @@
   "auth": {
     "login": "Logowanie",
     "register": "Rejestracja",
+    "logout": "Wyloguj",
+    "logoutPending": "Wylogowywanie...",
+    "logoutError": "Wylogowanie nie powiodło się. Odśwież stronę i spróbuj ponownie.",
     "emailVerificationNotice": {
       "title": "Twój email nie został jeszcze potwierdzony.",
-      "message": "Wysłaliśmy email z potwierdzeniem. Sprawdź pocztę i otwórz link potwierdzający. Jeśli email nie dotarł, możesz wysłać go ponownie.",
+      "message": "Potwierdzenie emaila daje pełny dostęp do funkcji słownika i treningu słów. Wysłaliśmy email z potwierdzeniem. Sprawdź pocztę i otwórz link. Jeśli email nie dotarł, możesz wysłać go ponownie.",
       "resendAction": "Wyślij email ponownie",
       "resendSending": "Wysyłanie...",
       "resendSuccess": "Email potwierdzający został wysłany ponownie.",

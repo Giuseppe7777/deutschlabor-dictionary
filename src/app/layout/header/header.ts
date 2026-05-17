@@ -4,12 +4,12 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { finalize } from 'rxjs';
 
 import { InterfaceLanguageService } from '../../core/i18n/interface-language.service';
-import { InterfaceLanguage } from '../../core/i18n/interface-language';
 import { AuthStateService } from '../../features/auth/services/auth-state.service';
+import { LanguageSwitcher } from './language-switcher/language-switcher';
 
 @Component({
   selector: 'app-header',
-  imports: [RouterLink, RouterLinkActive, TranslatePipe],
+  imports: [RouterLink, RouterLinkActive, TranslatePipe, LanguageSwitcher],
   templateUrl: './header.html',
   styleUrl: './header.css',
 })
@@ -18,8 +18,8 @@ export class Header {
   private readonly interfaceLanguageService = inject(InterfaceLanguageService);
   private readonly authState = inject(AuthStateService);
 
-  readonly supportedLanguages = this.interfaceLanguageService.supportedLanguages;
   readonly currentLanguage = this.interfaceLanguageService.currentLanguage;
+  readonly isLanguageChangePending = signal(false);
 
   readonly isAnonymous = this.authState.isAnonymous;
   readonly isAuthenticated = this.authState.isAuthenticated;
@@ -42,10 +42,8 @@ export class Header {
     return ['/', this.currentLanguage(), ...segments];
   }
 
-  changeLanguage(language: InterfaceLanguage): void {
-    const targetUrl = this.buildUrlWithLanguage(language);
-
-    void this.router.navigateByUrl(targetUrl);
+  setLanguageChangePending(isPending: boolean): void {
+    this.isLanguageChangePending.set(isPending);
   }
 
   logout(): void {
@@ -77,24 +75,5 @@ export class Header {
           this.logoutErrorKey.set('auth.logoutError');
         },
       });
-  }
-
-  private buildUrlWithLanguage(language: InterfaceLanguage): string {
-    const [pathAndQuery, fragment] = this.router.url.split('#');
-    const [path, query] = pathAndQuery.split('?');
-
-    const segments = path.split('/').filter(Boolean);
-
-    if (segments.length === 0) {
-      segments.push(language);
-    } else {
-      segments[0] = language;
-    }
-
-    const targetPath = `/${segments.join('/')}`;
-    const targetQuery = query ? `?${query}` : '';
-    const targetFragment = fragment ? `#${fragment}` : '';
-
-    return `${targetPath}${targetQuery}${targetFragment}`;
   }
 }

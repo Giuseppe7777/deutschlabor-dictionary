@@ -1,0 +1,40 @@
+<div class="language-switcher" [attr.aria-label]="'header.language' | translate">
+  <button
+    type="button"
+    class="language-toggle"
+    aria-haspopup="listbox"
+    [attr.aria-expanded]="isLanguageMenuOpen()"
+    [attr.aria-label]="('header.language' | translate) + ': ' + currentLanguage().toUpperCase()"
+    [disabled]="isLanguageMenuClosing()"
+    (click)="toggleLanguageMenu()"
+  >
+    <span class="language-current">
+      {{ currentLanguage().toUpperCase() }}
+    </span>
+
+    <span class="language-chevron" aria-hidden="true">
+      ▾
+    </span>
+  </button>
+
+  @if (isLanguageMenuOpen()) {
+    <div
+      class="language-menu"
+      role="listbox"
+      [class.is-closing]="isLanguageMenuClosing()"
+    >
+      @for (language of supportedLanguages; track language) {
+        <button
+          type="button"
+          role="option"
+          [class.is-active]="language === currentLanguage()"
+          [attr.aria-selected]="language === currentLanguage()"
+          [disabled]="isLanguageMenuClosing()"
+          (click)="changeLanguage(language)"
+        >
+          {{ language.toUpperCase() }}
+        </button>
+      }
+    </div>
+  }
+</div>

@@ -63,6 +63,7 @@ src/app/app.routes.server.ts
 src/app/app.routes.ts
 src/app/app.spec.ts
 src/app/app.ts
+src/app/core/http/api-error.ts
 src/app/core/http/csrf-token.interceptor.ts
 src/app/core/i18n/accept-language.interceptor.ts
 src/app/core/i18n/interface-language-route.service.ts
@@ -101,10 +102,12 @@ src/app/features/dictionary/pages/search-page/search-page.html
 src/app/features/dictionary/pages/search-page/search-page.ts
 src/app/features/dictionary/README.md
 src/app/features/README.md
+src/app/features/training/models/words-review.models.ts
 src/app/features/training/pages/training-page/training-page.css
 src/app/features/training/pages/training-page/training-page.html
 src/app/features/training/pages/training-page/training-page.ts
 src/app/features/training/README.md
+src/app/features/training/services/training-api.service.ts
 src/app/layout/header/header.css
 src/app/layout/header/header.html
 src/app/layout/header/header.spec.ts
@@ -299,6 +302,130 @@ const serverConfig: ApplicationConfig = {
 };
 
 export const config = mergeApplicationConfig(appConfig, serverConfig);
+</file>
+
+<file path="src/app/core/http/api-error.ts">
+import { HttpErrorResponse } from '@angular/common/http';
+
+export interface BackendEmailVerificationError {
+  required?: boolean;
+  emailVerified?: boolean;
+}
+
+export interface BackendRateLimitError {
+  action?: string;
+  limit?: number;
+  remaining?: number;
+  retryAfterSeconds?: number;
+}
+
+export interface BackendAccessError {
+  requiredRole?: string;
+}
+
+export interface BackendErrorBody {
+  status?: string;
+  error?: string;
+  message?: string;
+  messageKey?: string;
+  emailVerification?: BackendEmailVerificationError;
+  rateLimit?: BackendRateLimitError;
+  access?: BackendAccessError;
+}
+
+export type ProtectedApiFailure =
+  | 'anonymous'
+  | 'email_verification_required'
+  | 'rate_limited'
+  | 'not_implemented'
+  | 'csrf_error'
+  | 'error';
+
+export function getBackendErrorBody(error: unknown): BackendErrorBody | null {
+  if (!(error instanceof HttpErrorResponse)) {
+    return null;
+  }
+
+  if (error.error === null || typeof error.error !== 'object') {
+    return null;
+  }
+
+  return error.error as BackendErrorBody;
+}
+
+export function resolveProtectedApiFailure(error: unknown): ProtectedApiFailure {
+  if (!(error instanceof HttpErrorResponse)) {
+    return 'error';
+  }
+
+  const errorBody = getBackendErrorBody(error);
+
+  if (error.status === 401) {
+    return 'anonymous';
+  }
+
+  if (error.status === 403 && isEmailVerificationRequired(errorBody)) {
+    return 'email_verification_required';
+  }
+
+  if (error.status === 403 && isCsrfError(errorBody)) {
+    return 'csrf_error';
+  }
+
+  if (error.status === 429) {
+    return 'rate_limited';
+  }
+
+  if (error.status === 501) {
+    return 'not_implemented';
+  }
+
+  return 'error';
+}
+
+export function getRetryAfterSeconds(error: unknown): number | null {
+  if (!(error instanceof HttpErrorResponse)) {
+    return null;
+  }
+
+  const errorBody = getBackendErrorBody(error);
+  const retryAfterFromBody = errorBody?.rateLimit?.retryAfterSeconds;
+
+  if (typeof retryAfterFromBody === 'number') {
+    return retryAfterFromBody;
+  }
+
+  const retryAfterHeader = error.headers.get('Retry-After');
+
+  if (retryAfterHeader === null) {
+    return null;
+  }
+
+  const retryAfterSeconds = Number.parseInt(retryAfterHeader, 10);
+
+  return Number.isFinite(retryAfterSeconds) ? retryAfterSeconds : null;
+}
+
+function isEmailVerificationRequired(errorBody: BackendErrorBody | null): boolean {
+  return (
+    errorBody?.message === 'email_verification_required' ||
+    errorBody?.messageKey === 'auth.emailVerificationRequired' ||
+    errorBody?.emailVerification?.required === true
+  );
+}
+
+function isCsrfError(errorBody: BackendErrorBody | null): boolean {
+  const errorText = [
+    errorBody?.error,
+    errorBody?.message,
+    errorBody?.messageKey,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return errorText.includes('csrf');
+}
 </file>
 
 <file path="src/app/core/http/csrf-token.interceptor.ts">
@@ -1422,57 +1549,19 @@ Application-wide code goes to `core`.
 Stable layout code goes to `layout`.
 </file>
 
-<file path="src/app/features/training/pages/training-page/training-page.css">
-.page-placeholder {
-  max-width: 48rem;
-  padding: clamp(1.5rem, 4vw, 3rem);
-  border: 1px solid var(--app-color-border);
-  border-radius: 1.5rem;
-  background: var(--app-color-surface);
+<file path="src/app/features/training/models/words-review.models.ts">
+export interface ReviewWord {
+  id: number;
+  sourceLanguage: string;
+  targetLanguage: string;
+  word: string;
+  translation?: string;
+  nextReviewAt?: string | null;
 }
 
-.page-kicker {
-  margin: 0 0 0.75rem;
-  color: var(--app-color-text-muted);
-  font-size: var(--app-font-size-small);
-  font-weight: var(--app-font-weight-bold);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+export interface WordsReviewResponse {
+  words: ReviewWord[];
 }
-
-.page-placeholder h1 {
-  margin: 0;
-  font-size: clamp(2rem, 4vw, 3rem);
-  line-height: 1.05;
-}
-
-.page-placeholder p {
-  max-width: 38rem;
-  margin: 1rem 0 0;
-  color: var(--app-color-text-muted);
-  font-size: var(--app-font-size-body);
-}
-</file>
-
-<file path="src/app/features/training/pages/training-page/training-page.html">
-<section class="page-placeholder">
-  <p class="page-kicker">{{ 'pages.training.kicker' | translate }}</p>
-  <h1>{{ 'pages.training.title' | translate }}</h1>
-  <p>{{ 'pages.training.description' | translate }}</p>
-</section>
-</file>
-
-<file path="src/app/features/training/pages/training-page/training-page.ts">
-import { Component } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
-
-@Component({
-  selector: 'app-training-page',
-  imports: [TranslatePipe],
-  templateUrl: './training-page.html',
-  styleUrl: './training-page.css',
-})
-export class TrainingPage {}
 </file>
 
 <file path="src/app/features/training/README.md">
@@ -1501,6 +1590,24 @@ Do not use this folder for:
 
 Rule:
 Training feature code belongs here when it is directly related to reviewing, practicing, grading, or repeating searched words.
+</file>
+
+<file path="src/app/features/training/services/training-api.service.ts">
+import { HttpClient } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
+
+import { WordsReviewResponse } from '../models/words-review.models';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class TrainingApiService {
+  private readonly http = inject(HttpClient);
+
+  getWordsForReview() {
+    return this.http.get<WordsReviewResponse>('/api/words/review');
+  }
+}
 </file>
 
 <file path="src/app/layout/header/header.spec.ts">
@@ -2766,6 +2873,257 @@ export class LoginPage {
 }
 </file>
 
+<file path="src/app/features/training/pages/training-page/training-page.css">
+.page-placeholder {
+  max-width: 48rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border: 1px solid var(--app-color-border);
+  border-radius: 1.5rem;
+  background: var(--app-color-surface);
+}
+
+.page-kicker {
+  margin: 0 0 0.75rem;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.page-placeholder h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05;
+}
+
+.page-placeholder p {
+  max-width: 38rem;
+  margin: 1rem 0 0;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-body);
+}
+
+.training-status {
+  margin-top: 2rem;
+}
+
+.state-card {
+  padding: 1.25rem;
+  border: 1px solid var(--app-color-border);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--app-color-surface) 92%, black);
+}
+
+.state-card h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--app-color-text);
+  border-radius: 999px;
+  background: var(--app-color-text);
+  color: var(--app-color-surface);
+  font: inherit;
+  font-weight: var(--app-font-weight-bold);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.action-link-secondary {
+  background: transparent;
+  color: var(--app-color-text);
+}
+
+.review-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.review-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--app-color-border);
+  border-radius: 0.85rem;
+}
+
+.review-list span {
+  color: var(--app-color-text-muted);
+}
+</file>
+
+<file path="src/app/features/training/pages/training-page/training-page.html">
+<section class="page-placeholder training-page">
+  <p class="page-kicker">{{ 'pages.training.kicker' | translate }}</p>
+  <h1>{{ 'pages.training.title' | translate }}</h1>
+  <p>{{ 'pages.training.description' | translate }}</p>
+
+  <div class="training-status">
+    @if (status() === 'loading') {
+      <p>{{ 'pages.training.status.loading' | translate }}</p>
+    } @else if (status() === 'ready') {
+      @if (words().length > 0) {
+        <p>{{ 'pages.training.status.ready' | translate: { count: words().length } }}</p>
+
+        <ul class="review-list">
+          @for (word of words(); track word.id) {
+            <li>
+              <strong>{{ word.word }}</strong>
+              @if (word.translation) {
+                <span>{{ word.translation }}</span>
+              }
+            </li>
+          }
+        </ul>
+      } @else {
+        <p>{{ 'pages.training.status.empty' | translate }}</p>
+      }
+    } @else if (status() === 'anonymous') {
+      <div class="state-card">
+        <h2>{{ 'pages.training.status.anonymous.title' | translate }}</h2>
+        <p>{{ 'pages.training.status.anonymous.message' | translate }}</p>
+
+        <div class="action-row">
+          <a class="action-link" [routerLink]="loginPath()">
+            {{ 'auth.login' | translate }}
+          </a>
+          <a class="action-link action-link-secondary" [routerLink]="registerPath()">
+            {{ 'auth.register' | translate }}
+          </a>
+        </div>
+      </div>
+    } @else if (status() === 'email_verification_required') {
+      <div class="state-card">
+        <h2>{{ 'pages.training.status.emailVerificationRequired.title' | translate }}</h2>
+        <p>{{ 'pages.training.status.emailVerificationRequired.message' | translate }}</p>
+      </div>
+    } @else if (status() === 'rate_limited') {
+      <div class="state-card">
+        <h2>{{ 'pages.training.status.rateLimited.title' | translate }}</h2>
+        <p>{{ 'pages.training.status.rateLimited.message' | translate }}</p>
+
+        @if (retryAfterSeconds() !== null) {
+          <p>
+            {{ 'pages.training.status.rateLimited.retryAfter' | translate: { seconds: retryAfterSeconds() } }}
+          </p>
+        }
+
+        <button type="button" class="action-link" (click)="loadWordsForReview()">
+          {{ 'pages.training.actions.retry' | translate }}
+        </button>
+      </div>
+    } @else if (status() === 'not_implemented') {
+      <div class="state-card">
+        <h2>{{ 'pages.training.status.notImplemented.title' | translate }}</h2>
+        <p>{{ 'pages.training.status.notImplemented.message' | translate }}</p>
+      </div>
+    } @else if (status() === 'csrf_error') {
+      <div class="state-card">
+        <h2>{{ 'pages.training.status.csrfError.title' | translate }}</h2>
+        <p>{{ 'pages.training.status.csrfError.message' | translate }}</p>
+      </div>
+    } @else {
+      <div class="state-card">
+        <h2>{{ 'pages.training.status.generalError.title' | translate }}</h2>
+        <p>{{ 'pages.training.status.generalError.message' | translate }}</p>
+
+        <button type="button" class="action-link" (click)="loadWordsForReview()">
+          {{ 'pages.training.actions.retry' | translate }}
+        </button>
+      </div>
+    }
+  </div>
+</section>
+</file>
+
+<file path="src/app/features/training/pages/training-page/training-page.ts">
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
+
+import {
+  getRetryAfterSeconds,
+  ProtectedApiFailure,
+  resolveProtectedApiFailure,
+} from '../../../../core/http/api-error';
+import { InterfaceLanguageService } from '../../../../core/i18n/interface-language.service';
+import { ReviewWord } from '../../models/words-review.models';
+import { TrainingApiService } from '../../services/training-api.service';
+
+type TrainingPageStatus = 'loading' | 'ready' | ProtectedApiFailure;
+
+@Component({
+  selector: 'app-training-page',
+  imports: [RouterLink, TranslatePipe],
+  templateUrl: './training-page.html',
+  styleUrl: './training-page.css',
+})
+export class TrainingPage implements OnInit {
+  private readonly trainingApi = inject(TrainingApiService);
+  private readonly interfaceLanguageService = inject(InterfaceLanguageService);
+
+  protected readonly status = signal<TrainingPageStatus>('loading');
+  protected readonly words = signal<ReviewWord[]>([]);
+  protected readonly retryAfterSeconds = signal<number | null>(null);
+
+  protected readonly loginPath = computed(() => [
+    '/',
+    this.interfaceLanguageService.currentLanguage(),
+    'login',
+  ]);
+
+  protected readonly registerPath = computed(() => [
+    '/',
+    this.interfaceLanguageService.currentLanguage(),
+    'register',
+  ]);
+
+  ngOnInit(): void {
+    this.loadWordsForReview();
+  }
+
+  protected loadWordsForReview(): void {
+    this.status.set('loading');
+    this.words.set([]);
+    this.retryAfterSeconds.set(null);
+
+    this.trainingApi.getWordsForReview().subscribe({
+      next: (response) => {
+        this.words.set(response.words);
+        this.status.set('ready');
+      },
+      error: (error) => {
+        const failure = resolveProtectedApiFailure(error);
+
+        this.status.set(failure);
+
+        if (failure === 'rate_limited') {
+          this.retryAfterSeconds.set(getRetryAfterSeconds(error));
+        }
+      },
+    });
+  }
+}
+</file>
+
 <file path="src/styles.css">
 @import '@fontsource/roboto/latin-400.css';
 @import '@fontsource/roboto/latin-500.css';
@@ -3896,6 +4254,21 @@ export class App implements OnInit {
   padding-block: 0.75rem;
 }
 
+.app-header .main-nav,
+.app-header .auth-links,
+.app-header .user-area {
+  transition:
+    opacity 260ms ease,
+    transform 260ms ease;
+}
+
+.app-header.is-language-change-pending .main-nav,
+.app-header.is-language-change-pending .auth-links,
+.app-header.is-language-change-pending .user-area {
+  opacity: 0.62;
+  transform: translateY(0.08rem);
+}
+
 .brand {
   display: inline-flex;
   width: 18rem;
@@ -3987,28 +4360,181 @@ export class App implements OnInit {
 }
 
 .language-switcher {
-  display: flex;
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
 }
 
-.language-switcher button {
+.language-toggle {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.language-current {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid #111827;
+  border-radius: 999px;
+  background: #111827;
+  color: #ffffff;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.language-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.25rem;
+  margin-left: -0.45rem;
+  padding-left: 0.45rem;
+  border: 1px solid #d1d5db;
+  border-left: 0;
+  border-radius: 0 999px 999px 0;
+  background: #ffffff;
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: var(--app-font-weight-bold);
+}
+
+.language-toggle:hover .language-current,
+.language-toggle[aria-expanded="true"] .language-current {
+  background: #1f2937;
+}
+
+.language-toggle:hover .language-chevron,
+.language-toggle[aria-expanded="true"] .language-chevron {
+  border-color: #111827;
+  color: #111827;
+}
+
+.language-menu {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  right: auto;
+  z-index: 20;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.language-menu button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
   border: 1px solid #d1d5db;
   border-radius: 999px;
-  padding: 0.4rem 0.55rem;
   background: #ffffff;
   color: #374151;
   cursor: pointer;
   font: inherit;
   font-size: var(--app-font-size-small);
   font-weight: var(--app-font-weight-medium);
+  box-shadow: 0 0.45rem 1rem rgb(15 23 42 / 10%);
+  opacity: 0;
+  transform: translateY(-0.45rem) scale(0.92);
+  animation: language-circle-drop 260ms ease-out forwards;
 }
 
-.language-switcher button:hover,
-.language-switcher button.is-active {
+.language-menu button:nth-child(1) {
+  animation-delay: 20ms;
+}
+
+.language-menu button:nth-child(2) {
+  animation-delay: 55ms;
+}
+
+.language-menu button:nth-child(3) {
+  animation-delay: 90ms;
+}
+
+.language-menu button:nth-child(4) {
+  animation-delay: 125ms;
+}
+
+.language-menu button:nth-child(5) {
+  animation-delay: 160ms;
+}
+
+.language-menu button:nth-child(6) {
+  animation-delay: 195ms;
+}
+
+.language-menu.is-closing button {
+  pointer-events: none;
+  animation: language-circle-close 260ms ease-in forwards;
+}
+
+.language-menu.is-closing button:nth-child(1) {
+  animation-delay: 20ms;
+}
+
+.language-menu.is-closing button:nth-child(2) {
+  animation-delay: 55ms;
+}
+
+.language-menu.is-closing button:nth-child(3) {
+  animation-delay: 90ms;
+}
+
+.language-menu.is-closing button:nth-child(4) {
+  animation-delay: 125ms;
+}
+
+.language-menu.is-closing button:nth-child(5) {
+  animation-delay: 160ms;
+}
+
+.language-menu.is-closing button:nth-child(6) {
+  animation-delay: 195ms;
+}
+
+@keyframes language-circle-close {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-0.45rem) scale(0.92);
+  }
+}
+
+.language-menu button:hover,
+.language-menu button.is-active {
   border-color: #111827;
   background: #111827;
   color: #ffffff;
+}
+
+@keyframes language-circle-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-0.45rem) scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .auth-links {
@@ -4131,7 +4657,7 @@ export class App implements OnInit {
     justify-self: auto;
   }
 
-    .user-area {
+  .user-area {
     justify-items: start;
   }
 
@@ -4166,7 +4692,7 @@ export class App implements OnInit {
 </file>
 
 <file path="src/app/layout/header/header.html">
-<div class="app-header">
+<div class="app-header" [class.is-language-change-pending]="isLanguageChangePending()">
   <a class="brand" [routerLink]="localizedPath('')" aria-label="DeutschLabor">
     <img
       class="brand-logo"
@@ -4202,15 +4728,43 @@ export class App implements OnInit {
 
   <div class="header-actions">
     <div class="language-switcher" [attr.aria-label]="'header.language' | translate">
-      @for (language of supportedLanguages; track language) {
-        <button
-          type="button"
-          [class.is-active]="language === currentLanguage()"
-          [attr.aria-current]="language === currentLanguage() ? 'true' : null"
-          (click)="changeLanguage(language)"
+      <button
+        type="button"
+        class="language-toggle"
+        aria-haspopup="listbox"
+        [attr.aria-expanded]="isLanguageMenuOpen()"
+        [attr.aria-label]="('header.language' | translate) + ': ' + currentLanguage().toUpperCase()"
+        [disabled]="isLanguageMenuClosing()"
+        (click)="toggleLanguageMenu()"
+      >
+        <span class="language-current">
+          {{ currentLanguage().toUpperCase() }}
+        </span>
+
+        <span class="language-chevron" aria-hidden="true">
+          ▾
+        </span>
+      </button>
+
+      @if (isLanguageMenuOpen()) {
+        <div
+          class="language-menu"
+          role="listbox"
+          [class.is-closing]="isLanguageMenuClosing()"
         >
-          {{ language.toUpperCase() }}
-        </button>
+          @for (language of supportedLanguages; track language) {
+            <button
+              type="button"
+              role="option"
+              [class.is-active]="language === currentLanguage()"
+              [attr.aria-selected]="language === currentLanguage()"
+              [disabled]="isLanguageMenuClosing()"
+              (click)="changeLanguage(language)"
+            >
+              {{ language.toUpperCase() }}
+            </button>
+          }
+        </div>
       }
     </div>
 
@@ -4295,6 +4849,12 @@ export class Header {
 
   readonly supportedLanguages = this.interfaceLanguageService.supportedLanguages;
   readonly currentLanguage = this.interfaceLanguageService.currentLanguage;
+  readonly isLanguageMenuOpen = signal(false);
+  readonly isLanguageMenuClosing = signal(false);
+  readonly isLanguageChangePending = signal(false);
+
+  private readonly languageMenuAnimationMs = 430;
+  private readonly languageHeaderFadeMs = 180;
 
   readonly isAnonymous = this.authState.isAnonymous;
   readonly isAuthenticated = this.authState.isAuthenticated;
@@ -4317,10 +4877,55 @@ export class Header {
     return ['/', this.currentLanguage(), ...segments];
   }
 
+  toggleLanguageMenu(): void {
+    if (this.isLanguageMenuClosing()) {
+      return;
+    }
+
+    if (this.isLanguageMenuOpen()) {
+      this.closeLanguageMenuAfterAnimation();
+      return;
+    }
+
+    this.isLanguageMenuOpen.set(true);
+  }
+
   changeLanguage(language: InterfaceLanguage): void {
+    if (this.isLanguageMenuClosing()) {
+      return;
+    }
+
+    if (language === this.currentLanguage()) {
+      this.closeLanguageMenuAfterAnimation();
+      return;
+    }
+
     const targetUrl = this.buildUrlWithLanguage(language);
 
-    void this.router.navigateByUrl(targetUrl);
+    this.isLanguageChangePending.set(true);
+
+    this.closeLanguageMenuAfterAnimation(() => {
+      void this.router.navigateByUrl(targetUrl).finally(() => {
+        setTimeout(() => {
+          this.isLanguageChangePending.set(false);
+        }, this.languageHeaderFadeMs);
+      });
+    });
+  }
+
+  private closeLanguageMenuAfterAnimation(afterClosed?: () => void): void {
+    if (!this.isLanguageMenuOpen()) {
+      afterClosed?.();
+      return;
+    }
+
+    this.isLanguageMenuClosing.set(true);
+
+    setTimeout(() => {
+      this.isLanguageMenuOpen.set(false);
+      this.isLanguageMenuClosing.set(false);
+      afterClosed?.();
+    }, this.languageMenuAnimationMs);
   }
 
   logout(): void {
@@ -4416,8 +5021,41 @@ export class Header {
     },
     "training": {
       "kicker": "Training",
-      "title": "Wörter gezielt wiederholen",
-      "description": "Hier entsteht der Trainingsbereich für gesuchte und gespeicherte Wörter."
+      "title": "Wörter bewusst wiederholen",
+      "description": "Hier entsteht der Trainingsbereich für gesuchte und gespeicherte Wörter.",
+      "status": {
+        "loading": "Wörter für das Training werden geladen...",
+        "ready": "Wörter bereit zur Wiederholung: {{ count }}.",
+        "empty": "Aktuell gibt es keine Wörter, die zur Wiederholung bereit sind.",
+        "anonymous": {
+          "title": "Anmeldung erforderlich",
+          "message": "Melde dich an oder registriere dich, um die Wörter zu trainieren, die du im Wörterbuch gesucht hast."
+        },
+        "emailVerificationRequired": {
+          "title": "Email-Bestätigung erforderlich",
+          "message": "Bestätige deine Email-Adresse, um Zugriff auf das Worttraining zu erhalten."
+        },
+        "rateLimited": {
+          "title": "Zu viele Anfragen",
+          "message": "Das System hat die Anfragen vorübergehend begrenzt. Versuche es später noch einmal.",
+          "retryAfter": "Ein neuer Versuch ist ungefähr in {{ seconds }} Sekunden möglich."
+        },
+        "notImplemented": {
+          "title": "Training noch nicht implementiert",
+          "message": "Der Zugriff auf den protected endpoint funktioniert. Der Backend-Endpunkt existiert, aber die Wortwiederholung wird in Phase 14.x umgesetzt."
+        },
+        "csrfError": {
+          "title": "Sicherheitsprüfung fehlgeschlagen",
+          "message": "Aktualisiere die Seite und versuche es erneut."
+        },
+        "generalError": {
+          "title": "Training konnte nicht geladen werden",
+          "message": "Versuche es später erneut."
+        }
+      },
+      "actions": {
+        "retry": "Erneut laden"
+      }
     },
     "account": {
       "kicker": "Konto",
@@ -4579,8 +5217,41 @@ export class Header {
     },
     "training": {
       "kicker": "Training",
-      "title": "Review words with focus",
-      "description": "This will become the training area for searched and saved words."
+      "title": "Review words consciously",
+      "description": "This area will contain training for searched and saved words.",
+      "status": {
+        "loading": "Loading words for training...",
+        "ready": "Words ready for review: {{ count }}.",
+        "empty": "There are currently no words ready for review.",
+        "anonymous": {
+          "title": "Login required",
+          "message": "Log in or register to train the words you searched in the dictionary."
+        },
+        "emailVerificationRequired": {
+          "title": "Email verification required",
+          "message": "Verify your email address to access word training."
+        },
+        "rateLimited": {
+          "title": "Too many requests",
+          "message": "The system has temporarily limited requests. Try again later.",
+          "retryAfter": "You can try again in about {{ seconds }} seconds."
+        },
+        "notImplemented": {
+          "title": "Training not implemented yet",
+          "message": "Access to the protected endpoint works. The backend endpoint exists, but word review logic will be implemented in phase 14.x."
+        },
+        "csrfError": {
+          "title": "Security check failed",
+          "message": "Refresh the page and try again."
+        },
+        "generalError": {
+          "title": "Training could not be loaded",
+          "message": "Try again later."
+        }
+      },
+      "actions": {
+        "retry": "Load again"
+      }
     },
     "account": {
       "kicker": "Account",
@@ -4742,8 +5413,41 @@ export class Header {
     },
     "training": {
       "kicker": "Gyakorlás",
-      "title": "Szavak célzott ismétlése",
-      "description": "Itt készül a gyakorlási terület a keresett és mentett szavakhoz."
+      "title": "Ismételd a szavakat tudatosan",
+      "description": "Itt jön létre a keresett és mentett szavak gyakorlófelülete.",
+      "status": {
+        "loading": "Szavak betöltése a gyakorláshoz...",
+        "ready": "Ismétlésre kész szavak: {{ count }}.",
+        "empty": "Jelenleg nincs ismétlésre kész szó.",
+        "anonymous": {
+          "title": "Bejelentkezés szükséges",
+          "message": "Jelentkezz be vagy regisztrálj, hogy gyakorolhasd a szótárban keresett szavakat."
+        },
+        "emailVerificationRequired": {
+          "title": "Email-megerősítés szükséges",
+          "message": "Erősítsd meg az email-címedet, hogy hozzáférj a szavak gyakorlásához."
+        },
+        "rateLimited": {
+          "title": "Túl sok kérés",
+          "message": "A rendszer ideiglenesen korlátozta a kéréseket. Próbáld újra később.",
+          "retryAfter": "Új próbálkozás körülbelül {{ seconds }} másodperc múlva lehetséges."
+        },
+        "notImplemented": {
+          "title": "A gyakorlás még nincs megvalósítva",
+          "message": "A protected endpoint elérése működik. A backend endpoint létezik, de a szóismétlés logikája a 14.x szakaszban készül el."
+        },
+        "csrfError": {
+          "title": "A biztonsági ellenőrzés sikertelen",
+          "message": "Frissítsd az oldalt, és próbáld újra."
+        },
+        "generalError": {
+          "title": "A gyakorlást nem sikerült betölteni",
+          "message": "Próbáld újra később."
+        }
+      },
+      "actions": {
+        "retry": "Újratöltés"
+      }
     },
     "account": {
       "kicker": "Fiók",
@@ -4906,7 +5610,40 @@ export class Header {
     "training": {
       "kicker": "Trening",
       "title": "Powtarzaj słowa świadomie",
-      "description": "Tutaj powstanie strefa treningu dla wyszukanych i zapisanych słów."
+      "description": "Tutaj powstanie strefa treningu dla wyszukanych i zapisanych słów.",
+      "status": {
+        "loading": "Ładujemy słowa do treningu...",
+        "ready": "Słowa gotowe do powtórki: {{ count }}.",
+        "empty": "Obecnie nie ma słów gotowych do powtórki.",
+        "anonymous": {
+          "title": "Wymagane logowanie",
+          "message": "Zaloguj się albo zarejestruj, aby trenować słowa wyszukane w słowniku."
+        },
+        "emailVerificationRequired": {
+          "title": "Wymagane potwierdzenie emaila",
+          "message": "Potwierdź adres email, aby uzyskać dostęp do treningu słów."
+        },
+        "rateLimited": {
+          "title": "Zbyt wiele zapytań",
+          "message": "System tymczasowo ograniczył zapytania. Spróbuj ponownie trochę później.",
+          "retryAfter": "Ponowna próba będzie możliwa za około {{ seconds }} sekund."
+        },
+        "notImplemented": {
+          "title": "Trening nie jest jeszcze zaimplementowany",
+          "message": "Dostęp do protected endpoint działa. Backend endpoint istnieje, ale logika powtarzania słów zostanie wdrożona w etapie 14.x."
+        },
+        "csrfError": {
+          "title": "Kontrola bezpieczeństwa nie powiodła się",
+          "message": "Odśwież stronę i spróbuj ponownie."
+        },
+        "generalError": {
+          "title": "Nie udało się załadować treningu",
+          "message": "Spróbuj ponownie później."
+        }
+      },
+      "actions": {
+        "retry": "Załaduj ponownie"
+      }
     },
     "account": {
       "kicker": "Konto",
@@ -5068,8 +5805,41 @@ export class Header {
     },
     "training": {
       "kicker": "Тренировка",
-      "title": "Целенаправленно повторять слова",
-      "description": "Здесь будет зона тренировки для найденных и сохранённых слов."
+      "title": "Повторяй слова осознанно",
+      "description": "Здесь будет зона тренировки для найденных и сохранённых слов.",
+      "status": {
+        "loading": "Загружаем слова для тренировки...",
+        "ready": "Слов готово к повторению: {{ count }}.",
+        "empty": "Сейчас нет слов, готовых к повторению.",
+        "anonymous": {
+          "title": "Нужен вход",
+          "message": "Войди или зарегистрируйся, чтобы тренировать слова, которые ты искал в словаре."
+        },
+        "emailVerificationRequired": {
+          "title": "Нужно подтвердить email",
+          "message": "Подтверди email, чтобы получить доступ к тренировке слов."
+        },
+        "rateLimited": {
+          "title": "Слишком много запросов",
+          "message": "Система временно ограничила запросы. Попробуй немного позже.",
+          "retryAfter": "Повторная попытка будет возможна примерно через {{ seconds }} секунд."
+        },
+        "notImplemented": {
+          "title": "Тренировка ещё не реализована",
+          "message": "Доступ к protected endpoint работает. Backend endpoint существует, но логика повторения слов будет реализована на этапе 14.x."
+        },
+        "csrfError": {
+          "title": "Ошибка проверки безопасности",
+          "message": "Обнови страницу и попробуй ещё раз."
+        },
+        "generalError": {
+          "title": "Не удалось загрузить тренировку",
+          "message": "Попробуй ещё раз позже."
+        }
+      },
+      "actions": {
+        "retry": "Загрузить ещё раз"
+      }
     },
     "account": {
       "kicker": "Кабинет",
@@ -5231,8 +6001,41 @@ export class Header {
     },
     "training": {
       "kicker": "Тренування",
-      "title": "Цілеспрямовано повторювати слова",
-      "description": "Тут буде зона тренування для знайдених і збережених слів."
+      "title": "Повторюй слова свідомо",
+      "description": "Тут буде зона тренування для знайдених і збережених слів.",
+      "status": {
+        "loading": "Завантажуємо слова для тренування...",
+        "ready": "Слів готово до повторення: {{ count }}.",
+        "empty": "Зараз немає слів, готових до повторення.",
+        "anonymous": {
+          "title": "Потрібен вхід",
+          "message": "Увійди або зареєструйся, щоб тренувати слова, які ти шукав у словнику."
+        },
+        "emailVerificationRequired": {
+          "title": "Потрібне підтвердження email",
+          "message": "Підтверди email, щоб отримати доступ до тренування слів."
+        },
+        "rateLimited": {
+          "title": "Забагато запитів",
+          "message": "Система тимчасово обмежила запити. Спробуй трохи пізніше.",
+          "retryAfter": "Повторна спроба буде можлива приблизно через {{ seconds }} секунд."
+        },
+        "notImplemented": {
+          "title": "Тренування ще не реалізовано",
+          "message": "Доступ до protected endpoint працює. Backend endpoint існує, але логіка повторення слів буде реалізована в етапі 14.x."
+        },
+        "csrfError": {
+          "title": "Помилка перевірки безпеки",
+          "message": "Онови сторінку і спробуй ще раз."
+        },
+        "generalError": {
+          "title": "Не вдалося завантажити тренування",
+          "message": "Спробуй ще раз пізніше."
+        }
+      },
+      "actions": {
+        "retry": "Завантажити ще раз"
+      }
     },
     "account": {
       "kicker": "Кабінет",

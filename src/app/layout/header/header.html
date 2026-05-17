@@ -1,4 +1,4 @@
-<div class="app-header">
+<div class="app-header" [class.is-language-change-pending]="isLanguageChangePending()">
   <a class="brand" [routerLink]="localizedPath('')" aria-label="DeutschLabor">
     <img
       class="brand-logo"
@@ -33,18 +33,9 @@
   </nav>
 
   <div class="header-actions">
-    <div class="language-switcher" [attr.aria-label]="'header.language' | translate">
-      @for (language of supportedLanguages; track language) {
-        <button
-          type="button"
-          [class.is-active]="language === currentLanguage()"
-          [attr.aria-current]="language === currentLanguage() ? 'true' : null"
-          (click)="changeLanguage(language)"
-        >
-          {{ language.toUpperCase() }}
-        </button>
-      }
-    </div>
+    <app-language-switcher
+      (languageChangePendingChange)="setLanguageChangePending($event)"
+    />
 
     @if (isAuthenticated()) {
       <div class="user-area">

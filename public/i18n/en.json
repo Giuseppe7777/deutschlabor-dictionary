@@ -38,8 +38,41 @@
     },
     "training": {
       "kicker": "Training",
-      "title": "Review words with focus",
-      "description": "This will become the training area for searched and saved words."
+      "title": "Review words consciously",
+      "description": "This area will contain training for searched and saved words.",
+      "status": {
+        "loading": "Loading words for training...",
+        "ready": "Words ready for review: {{ count }}.",
+        "empty": "There are currently no words ready for review.",
+        "anonymous": {
+          "title": "Login required",
+          "message": "Log in or register to train the words you searched in the dictionary."
+        },
+        "emailVerificationRequired": {
+          "title": "Email verification required",
+          "message": "Verify your email address to access word training."
+        },
+        "rateLimited": {
+          "title": "Too many requests",
+          "message": "The system has temporarily limited requests. Try again later.",
+          "retryAfter": "You can try again in about {{ seconds }} seconds."
+        },
+        "notImplemented": {
+          "title": "Training not implemented yet",
+          "message": "Access to the protected endpoint works. The backend endpoint exists, but word review logic will be implemented in phase 14.x."
+        },
+        "csrfError": {
+          "title": "Security check failed",
+          "message": "Refresh the page and try again."
+        },
+        "generalError": {
+          "title": "Training could not be loaded",
+          "message": "Try again later."
+        }
+      },
+      "actions": {
+        "retry": "Load again"
+      }
     },
     "account": {
       "kicker": "Account",

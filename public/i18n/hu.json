@@ -38,8 +38,41 @@
     },
     "training": {
       "kicker": "Gyakorlás",
-      "title": "Szavak célzott ismétlése",
-      "description": "Itt készül a gyakorlási terület a keresett és mentett szavakhoz."
+      "title": "Ismételd a szavakat tudatosan",
+      "description": "Itt jön létre a keresett és mentett szavak gyakorlófelülete.",
+      "status": {
+        "loading": "Szavak betöltése a gyakorláshoz...",
+        "ready": "Ismétlésre kész szavak: {{ count }}.",
+        "empty": "Jelenleg nincs ismétlésre kész szó.",
+        "anonymous": {
+          "title": "Bejelentkezés szükséges",
+          "message": "Jelentkezz be vagy regisztrálj, hogy gyakorolhasd a szótárban keresett szavakat."
+        },
+        "emailVerificationRequired": {
+          "title": "Email-megerősítés szükséges",
+          "message": "Erősítsd meg az email-címedet, hogy hozzáférj a szavak gyakorlásához."
+        },
+        "rateLimited": {
+          "title": "Túl sok kérés",
+          "message": "A rendszer ideiglenesen korlátozta a kéréseket. Próbáld újra később.",
+          "retryAfter": "Új próbálkozás körülbelül {{ seconds }} másodperc múlva lehetséges."
+        },
+        "notImplemented": {
+          "title": "A gyakorlás még nincs megvalósítva",
+          "message": "A protected endpoint elérése működik. A backend endpoint létezik, de a szóismétlés logikája a 14.x szakaszban készül el."
+        },
+        "csrfError": {
+          "title": "A biztonsági ellenőrzés sikertelen",
+          "message": "Frissítsd az oldalt, és próbáld újra."
+        },
+        "generalError": {
+          "title": "A gyakorlást nem sikerült betölteni",
+          "message": "Próbáld újra később."
+        }
+      },
+      "actions": {
+        "retry": "Újratöltés"
+      }
     },
     "account": {
       "kicker": "Fiók",

@@ -1,5 +1,81 @@
-<section class="page-placeholder">
+<section class="page-placeholder training-page">
   <p class="page-kicker">{{ 'pages.training.kicker' | translate }}</p>
   <h1>{{ 'pages.training.title' | translate }}</h1>
   <p>{{ 'pages.training.description' | translate }}</p>
+
+  <div class="training-status">
+    @if (status() === 'loading') {
+      <p>{{ 'pages.training.status.loading' | translate }}</p>
+    } @else if (status() === 'ready') {
+      @if (words().length > 0) {
+        <p>{{ 'pages.training.status.ready' | translate: { count: words().length } }}</p>
+
+        <ul class="review-list">
+          @for (word of words(); track word.id) {
+            <li>
+              <strong>{{ word.word }}</strong>
+              @if (word.translation) {
+                <span>{{ word.translation }}</span>
+              }
+            </li>
+          }
+        </ul>
+      } @else {
+        <p>{{ 'pages.training.status.empty' | translate }}</p>
+      }
+    } @else if (status() === 'anonymous') {
+      <div class="state-card">
+        <h2>{{ 'pages.training.status.anonymous.title' | translate }}</h2>
+        <p>{{ 'pages.training.status.anonymous.message' | translate }}</p>
+
+        <div class="action-row">
+          <a class="action-link" [routerLink]="loginPath()">
+            {{ 'auth.login' | translate }}
+          </a>
+          <a class="action-link action-link-secondary" [routerLink]="registerPath()">
+            {{ 'auth.register' | translate }}
+          </a>
+        </div>
+      </div>
+    } @else if (status() === 'email_verification_required') {
+      <div class="state-card">
+        <h2>{{ 'pages.training.status.emailVerificationRequired.title' | translate }}</h2>
+        <p>{{ 'pages.training.status.emailVerificationRequired.message' | translate }}</p>
+      </div>
+    } @else if (status() === 'rate_limited') {
+      <div class="state-card">
+        <h2>{{ 'pages.training.status.rateLimited.title' | translate }}</h2>
+        <p>{{ 'pages.training.status.rateLimited.message' | translate }}</p>
+
+        @if (retryAfterSeconds() !== null) {
+          <p>
+            {{ 'pages.training.status.rateLimited.retryAfter' | translate: { seconds: retryAfterSeconds() } }}
+          </p>
+        }
+
+        <button type="button" class="action-link" (click)="loadWordsForReview()">
+          {{ 'pages.training.actions.retry' | translate }}
+        </button>
+      </div>
+    } @else if (status() === 'not_implemented') {
+      <div class="state-card">
+        <h2>{{ 'pages.training.status.notImplemented.title' | translate }}</h2>
+        <p>{{ 'pages.training.status.notImplemented.message' | translate }}</p>
+      </div>
+    } @else if (status() === 'csrf_error') {
+      <div class="state-card">
+        <h2>{{ 'pages.training.status.csrfError.title' | translate }}</h2>
+        <p>{{ 'pages.training.status.csrfError.message' | translate }}</p>
+      </div>
+    } @else {
+      <div class="state-card">
+        <h2>{{ 'pages.training.status.generalError.title' | translate }}</h2>
+        <p>{{ 'pages.training.status.generalError.message' | translate }}</p>
+
+        <button type="button" class="action-link" (click)="loadWordsForReview()">
+          {{ 'pages.training.actions.retry' | translate }}
+        </button>
+      </div>
+    }
+  </div>
 </section>

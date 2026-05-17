@@ -2766,74 +2766,6 @@ export class LoginPage {
 }
 </file>
 
-<file path="src/app/features/auth/services/auth-state.service.ts">
-import { computed, inject, Injectable, signal } from '@angular/core';
-
-import {
-  AuthState,
-  initialAuthState,
-  toAnonymousState,
-  toAuthenticatedState,
-  toAuthErrorState,
-} from '../models/auth-state.models';
-import { AuthApiService } from './auth-api.service';
-
-@Injectable({
-  providedIn: 'root',
-})
-export class AuthStateService {
-  private readonly authApi = inject(AuthApiService);
-
-  private readonly stateSignal = signal<AuthState>(initialAuthState);
-
-  readonly state = this.stateSignal.asReadonly();
-
-  readonly user = computed(() => this.state().user);
-
-  readonly isLoading = computed(() => this.state().status === 'loading');
-
-  readonly isAnonymous = computed(() => this.state().status === 'anonymous');
-
-  readonly isAuthenticated = computed(
-    () =>
-      this.state().status === 'authenticated_unverified' ||
-      this.state().status === 'authenticated_verified',
-  );
-
-  readonly isEmailVerified = computed(
-    () => this.state().status === 'authenticated_verified',
-  );
-
-  readonly isEmailUnverified = computed(
-    () => this.state().status === 'authenticated_unverified',
-  );
-
-  readonly error = computed(() => this.state().error);
-
-  loadCurrentUser(): void {
-    this.stateSignal.set(initialAuthState);
-
-    this.authApi.me().subscribe({
-      next: (user) => {
-        this.stateSignal.set(toAuthenticatedState(user));
-      },
-      error: (error) => {
-        if (error?.status === 401) {
-          this.stateSignal.set(toAnonymousState());
-          return;
-        }
-
-        this.stateSignal.set(toAuthErrorState('auth_state_load_failed'));
-      },
-    });
-  }
-
-  clearAuthenticatedUser(): void {
-    this.stateSignal.set(toAnonymousState());
-  }
-}
-</file>
-
 <file path="src/styles.css">
 @import '@fontsource/roboto/latin-400.css';
 @import '@fontsource/roboto/latin-500.css';
@@ -2979,113 +2911,6 @@ a {
     <router-outlet />
   </div>
 </main>
-</file>
-
-<file path="src/app/features/auth/models/auth-api.models.ts">
-import { CurrentUser } from './current-user';
-
-export interface RegisterStartRequest {
-  firstName: string;
-  lastName: string;
-  email: string;
-}
-
-export type PublicKeyCredentialDescriptorFromServer = Omit<
-  PublicKeyCredentialDescriptor,
-  'id'
-> & {
-  id: string;
-};
-
-export type PublicKeyCredentialUserEntityFromServer = Omit<
-  PublicKeyCredentialUserEntity,
-  'id'
-> & {
-  id: string;
-};
-
-export type PublicKeyCredentialCreationOptionsFromServer = Omit<
-  PublicKeyCredentialCreationOptions,
-  'challenge' | 'user' | 'excludeCredentials'
-> & {
-  challenge: string;
-  user: PublicKeyCredentialUserEntityFromServer;
-  excludeCredentials?: PublicKeyCredentialDescriptorFromServer[];
-};
-
-export type PublicKeyCredentialRequestOptionsFromServer = Omit<
-  PublicKeyCredentialRequestOptions,
-  'challenge' | 'allowCredentials'
-> & {
-  challenge: string;
-  allowCredentials?: PublicKeyCredentialDescriptorFromServer[];
-};
-
-export interface RegisterStartResponse {
-  publicKey: PublicKeyCredentialCreationOptionsFromServer;
-  expiresAt: string;
-}
-
-export interface RegisterFinishRequest {
-  email: string;
-  credential: unknown;
-}
-
-export interface EmailVerificationStatus {
-  required: boolean;
-  emailSent: boolean;
-  emailVerified: boolean;
-}
-
-export interface RegisterFinishResponse extends CurrentUser {
-  emailVerification: EmailVerificationStatus;
-}
-
-export interface LoginStartRequest {
-  email: string;
-}
-
-export interface LoginStartResponse {
-  publicKey: PublicKeyCredentialRequestOptionsFromServer;
-  expiresAt: string;
-}
-
-export interface LoginFinishRequest {
-  email: string;
-  credential: unknown;
-}
-
-export interface LoginFinishResponse {
-  status: 'ok';
-  message: string;
-  user: {
-    email: string;
-    firstName: string;
-    lastName: string;
-  };
-}
-
-export interface LogoutResponse {
-  status: 'ok';
-  message: string;
-}
-
-export interface ResendVerificationEmailResponse {
-  status: 'ok';
-  message: string;
-  emailVerification: EmailVerificationStatus;
-}
-
-export interface VerifyEmailRequest {
-  token: string;
-}
-
-export interface VerifyEmailResponse {
-  status: 'ok' | 'error';
-  message: string;
-  messageKey?: string;
-  emailVerification?: EmailVerificationStatus;
-}
 </file>
 
 <file path="src/app/features/auth/pages/register-page/register-page.css">
@@ -3742,6 +3567,84 @@ export class RegisterPage {
 }
 </file>
 
+<file path="src/app/features/auth/services/auth-state.service.ts">
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { Observable, tap } from 'rxjs';
+
+import {
+  AuthState,
+  initialAuthState,
+  toAnonymousState,
+  toAuthenticatedState,
+  toAuthErrorState,
+} from '../models/auth-state.models';
+import { LogoutResponse } from '../models/auth-api.models';
+import { AuthApiService } from './auth-api.service';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class AuthStateService {
+  private readonly authApi = inject(AuthApiService);
+
+  private readonly stateSignal = signal<AuthState>(initialAuthState);
+
+  readonly state = this.stateSignal.asReadonly();
+
+  readonly user = computed(() => this.state().user);
+
+  readonly isLoading = computed(() => this.state().status === 'loading');
+
+  readonly isAnonymous = computed(() => this.state().status === 'anonymous');
+
+  readonly isAuthenticated = computed(
+    () =>
+      this.state().status === 'authenticated_unverified' ||
+      this.state().status === 'authenticated_verified',
+  );
+
+  readonly isEmailVerified = computed(
+    () => this.state().status === 'authenticated_verified',
+  );
+
+  readonly isEmailUnverified = computed(
+    () => this.state().status === 'authenticated_unverified',
+  );
+
+  readonly error = computed(() => this.state().error);
+
+  loadCurrentUser(): void {
+    this.stateSignal.set(initialAuthState);
+
+    this.authApi.me().subscribe({
+      next: (user) => {
+        this.stateSignal.set(toAuthenticatedState(user));
+      },
+      error: (error) => {
+        if (error?.status === 401) {
+          this.stateSignal.set(toAnonymousState());
+          return;
+        }
+
+        this.stateSignal.set(toAuthErrorState('auth_state_load_failed'));
+      },
+    });
+  }
+
+  logout(): Observable<LogoutResponse> {
+    return this.authApi.logout().pipe(
+      tap(() => {
+        this.stateSignal.set(toAnonymousState());
+      }),
+    );
+  }
+
+  clearAuthenticatedUser(): void {
+    this.stateSignal.set(toAnonymousState());
+  }
+}
+</file>
+
 <file path="src/app/app.config.ts">
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideHttpClient, withFetch, withInterceptors, } from '@angular/common/http';
@@ -3845,6 +3748,142 @@ export const routes: Routes = [
     redirectTo: DEFAULT_INTERFACE_LANGUAGE,
   },
 ];
+</file>
+
+<file path="src/app/features/auth/models/auth-api.models.ts">
+import { CurrentUser } from './current-user';
+
+export interface RegisterStartRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export type PublicKeyCredentialDescriptorFromServer = Omit<
+  PublicKeyCredentialDescriptor,
+  'id'
+> & {
+  id: string;
+};
+
+export type PublicKeyCredentialUserEntityFromServer = Omit<
+  PublicKeyCredentialUserEntity,
+  'id'
+> & {
+  id: string;
+};
+
+export type PublicKeyCredentialCreationOptionsFromServer = Omit<
+  PublicKeyCredentialCreationOptions,
+  'challenge' | 'user' | 'excludeCredentials'
+> & {
+  challenge: string;
+  user: PublicKeyCredentialUserEntityFromServer;
+  excludeCredentials?: PublicKeyCredentialDescriptorFromServer[];
+};
+
+export type PublicKeyCredentialRequestOptionsFromServer = Omit<
+  PublicKeyCredentialRequestOptions,
+  'challenge' | 'allowCredentials'
+> & {
+  challenge: string;
+  allowCredentials?: PublicKeyCredentialDescriptorFromServer[];
+};
+
+export interface RegisterStartResponse {
+  publicKey: PublicKeyCredentialCreationOptionsFromServer;
+  expiresAt: string;
+}
+
+export interface RegisterFinishRequest {
+  email: string;
+  credential: unknown;
+}
+
+export interface EmailVerificationStatus {
+  required: boolean;
+  emailSent: boolean;
+  emailVerified: boolean;
+}
+
+export interface RegisterFinishResponse extends CurrentUser {
+  emailVerification: EmailVerificationStatus;
+}
+
+export interface LoginStartRequest {
+  email: string;
+}
+
+export interface LoginStartResponse {
+  publicKey: PublicKeyCredentialRequestOptionsFromServer;
+  expiresAt: string;
+}
+
+export interface LoginFinishRequest {
+  email: string;
+  credential: unknown;
+}
+
+export interface LoginFinishResponse {
+  status: 'ok';
+  message: string;
+  user: {
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+export interface LogoutResponse {
+  status: 'logged out';
+}
+
+export interface ResendVerificationEmailResponse {
+  status: 'ok';
+  message: string;
+  emailVerification: EmailVerificationStatus;
+}
+
+export interface VerifyEmailRequest {
+  token: string;
+}
+
+export interface VerifyEmailResponse {
+  status: 'ok' | 'error';
+  message: string;
+  messageKey?: string;
+  emailVerification?: EmailVerificationStatus;
+}
+</file>
+
+<file path="src/app/app.ts">
+import { isPlatformBrowser } from '@angular/common';
+import { Component, inject, OnInit, PLATFORM_ID } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+
+import { InterfaceLanguageRouteService } from './core/i18n/interface-language-route.service';
+import { AuthStateService } from './features/auth/services/auth-state.service';
+import { Header } from './layout/header/header';
+import { EmailVerificationNotice } from './features/auth/components/email-verification-notice/email-verification-notice';
+
+@Component({
+  selector: 'app-root',
+  imports: [RouterOutlet, Header, EmailVerificationNotice],
+  templateUrl: './app.html',
+  styleUrl: './app.css',
+})
+export class App implements OnInit {
+  private readonly _interfaceLanguageRoute = inject(InterfaceLanguageRouteService);
+  private readonly authStateService = inject(AuthStateService);
+  private readonly platformId = inject(PLATFORM_ID);
+
+  ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    this.authStateService.loadCurrentUser();
+  }
+}
 </file>
 
 <file path="src/app/layout/header/header.css">
@@ -3992,8 +4031,15 @@ export const routes: Routes = [
 }
 
 .user-area {
+  display: grid;
+  justify-items: end;
+  gap: 0.35rem;
+}
+
+.user-session {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
 }
 
 .user-chip {
@@ -4034,6 +4080,35 @@ export const routes: Routes = [
   white-space: nowrap;
 }
 
+.logout-button {
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  background: #ffffff;
+  color: #991b1b;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.logout-button:hover:not(:disabled) {
+  border-color: #991b1b;
+  background: #fee2e2;
+}
+
+.logout-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.logout-error {
+  margin: 0;
+  color: #991b1b;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-medium);
+}
+
 @media (max-width: 900px) {
   .app-header {
     display: flex;
@@ -4055,6 +4130,14 @@ export const routes: Routes = [
   .header-actions {
     justify-self: auto;
   }
+
+    .user-area {
+    justify-items: start;
+  }
+
+  .user-session {
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 700px) {
@@ -4075,39 +4158,9 @@ export const routes: Routes = [
 
   .main-nav a,
   .auth-links a,
-  .user-chip {
+  .user-chip,
+  .logout-button {
     min-width: auto;
-  }
-}
-</file>
-
-<file path="src/app/app.ts">
-import { isPlatformBrowser } from '@angular/common';
-import { Component, inject, OnInit, PLATFORM_ID } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-
-import { InterfaceLanguageRouteService } from './core/i18n/interface-language-route.service';
-import { AuthStateService } from './features/auth/services/auth-state.service';
-import { Header } from './layout/header/header';
-import { EmailVerificationNotice } from './features/auth/components/email-verification-notice/email-verification-notice';
-
-@Component({
-  selector: 'app-root',
-  imports: [RouterOutlet, Header, EmailVerificationNotice],
-  templateUrl: './app.html',
-  styleUrl: './app.css',
-})
-export class App implements OnInit {
-  private readonly _interfaceLanguageRoute = inject(InterfaceLanguageRouteService);
-  private readonly authStateService = inject(AuthStateService);
-  private readonly platformId = inject(PLATFORM_ID);
-
-  ngOnInit(): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-
-    this.authStateService.loadCurrentUser();
   }
 }
 </file>
@@ -4163,15 +4216,37 @@ export class App implements OnInit {
 
     @if (isAuthenticated()) {
       <div class="user-area">
-        <a class="user-chip" [routerLink]="localizedPath('account')">
-          <span class="user-avatar" aria-hidden="true">
-            {{ userInitial() }}
-          </span>
+        <div class="user-session">
+          <a class="user-chip" [routerLink]="localizedPath('account')">
+            <span class="user-avatar" aria-hidden="true">
+              {{ userInitial() }}
+            </span>
 
-          <span class="user-email">
-            {{ userEmail() }}
-          </span>
-        </a>
+            <span class="user-email">
+              {{ userEmail() }}
+            </span>
+          </a>
+
+          <button
+            type="button"
+            class="logout-button"
+            [disabled]="isLogoutPending()"
+            [attr.aria-busy]="isLogoutPending() ? 'true' : null"
+            (click)="logout()"
+          >
+            @if (isLogoutPending()) {
+              {{ 'auth.logoutPending' | translate }}
+            } @else {
+              {{ 'auth.logout' | translate }}
+            }
+          </button>
+        </div>
+
+        @if (logoutErrorKey(); as errorKey) {
+          <p class="logout-error" role="alert">
+            {{ errorKey | translate }}
+          </p>
+        }
       </div>
     } @else if (isAnonymous()) {
       <div class="auth-links">
@@ -4198,9 +4273,10 @@ export class App implements OnInit {
 </file>
 
 <file path="src/app/layout/header/header.ts">
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
+import { finalize } from 'rxjs';
 
 import { InterfaceLanguageService } from '../../core/i18n/interface-language.service';
 import { InterfaceLanguage } from '../../core/i18n/interface-language';
@@ -4224,6 +4300,9 @@ export class Header {
   readonly isAuthenticated = this.authState.isAuthenticated;
   readonly currentUser = this.authState.user;
 
+  readonly isLogoutPending = signal(false);
+  readonly logoutErrorKey = signal<string | null>(null);
+
   readonly userEmail = computed(() => this.currentUser()?.email ?? '');
 
   readonly userInitial = computed(() => {
@@ -4242,6 +4321,37 @@ export class Header {
     const targetUrl = this.buildUrlWithLanguage(language);
 
     void this.router.navigateByUrl(targetUrl);
+  }
+
+  logout(): void {
+    if (this.isLogoutPending()) {
+      return;
+    }
+
+    this.logoutErrorKey.set(null);
+    this.isLogoutPending.set(true);
+
+    this.authState
+      .logout()
+      .pipe(
+        finalize(() => {
+          this.isLogoutPending.set(false);
+        }),
+      )
+      .subscribe({
+        next: () => {
+          void this.router.navigate(this.localizedPath(''));
+        },
+        error: (error) => {
+          if (error?.status === 401) {
+            this.authState.clearAuthenticatedUser();
+            void this.router.navigate(this.localizedPath(''));
+            return;
+          }
+
+          this.logoutErrorKey.set('auth.logoutError');
+        },
+      });
   }
 
   private buildUrlWithLanguage(language: InterfaceLanguage): string {
@@ -4284,6 +4394,9 @@ export class Header {
   "auth": {
     "login": "Anmelden",
     "register": "Registrieren",
+    "logout": "Abmelden",
+    "logoutPending": "Wird abgemeldet...",
+    "logoutError": "Abmeldung fehlgeschlagen. Lade die Seite neu und versuche es erneut.",
     "emailVerificationNotice": {
       "title": "Deine E-Mail ist noch nicht bestätigt.",
       "message": "Mit der Bestätigung deiner E-Mail erhältst du vollen Zugriff auf die Wörterbuch- und Worttrainingsfunktionen. Wir haben dir eine Bestätigungs-E-Mail gesendet. Prüfe dein Postfach und öffne den Link. Wenn die E-Mail nicht angekommen ist, kannst du sie erneut senden.",
@@ -4444,6 +4557,9 @@ export class Header {
   "auth": {
     "login": "Log in",
     "register": "Register",
+    "logout": "Log out",
+    "logoutPending": "Logging out...",
+    "logoutError": "Logout failed. Reload the page and try again.",
     "emailVerificationNotice": {
       "title": "Your email is not verified yet.",
       "message": "Verifying your email gives you full access to the dictionary and word training features. We have sent you a verification email. Check your inbox and open the link. If the email did not arrive, you can send it again.",
@@ -4604,6 +4720,9 @@ export class Header {
   "auth": {
     "login": "Belépés",
     "register": "Regisztráció",
+    "logout": "Kijelentkezés",
+    "logoutPending": "Kijelentkezés...",
+    "logoutError": "A kijelentkezés nem sikerült. Töltsd újra az oldalt, és próbáld meg újra.",
     "emailVerificationNotice": {
       "title": "Az emailed még nincs megerősítve.",
       "message": "Az email megerősítése teljes hozzáférést ad a szótár és a szótanulás funkcióihoz. Elküldtük a megerősítő emailt. Ellenőrizd a postafiókodat, és nyisd meg a linket. Ha az email nem érkezett meg, újra elküldheted.",
@@ -4764,6 +4883,9 @@ export class Header {
   "auth": {
     "login": "Logowanie",
     "register": "Rejestracja",
+    "logout": "Wyloguj",
+    "logoutPending": "Wylogowywanie...",
+    "logoutError": "Wylogowanie nie powiodło się. Odśwież stronę i spróbuj ponownie.",
     "emailVerificationNotice": {
       "title": "Twój email nie został jeszcze potwierdzony.",
       "message": "Potwierdzenie emaila daje pełny dostęp do funkcji słownika i treningu słów. Wysłaliśmy email z potwierdzeniem. Sprawdź pocztę i otwórz link. Jeśli email nie dotarł, możesz wysłać go ponownie.",
@@ -4924,6 +5046,9 @@ export class Header {
   "auth": {
     "login": "Вход",
     "register": "Регистрация",
+    "logout": "Выйти",
+    "logoutPending": "Выход...",
+    "logoutError": "Не удалось выйти. Перезагрузи страницу и попробуй ещё раз.",
     "emailVerificationNotice": {
       "title": "Ваш email ещё не подтверждён.",
       "message": "Подтверждение email открывает полный доступ к функциям словаря и тренировки слов. Мы отправили письмо для подтверждения. Проверьте почту и откройте ссылку. Если письмо не пришло, вы можете отправить его ещё раз.",
@@ -5084,6 +5209,9 @@ export class Header {
   "auth": {
     "login": "Вхід",
     "register": "Реєстрація",
+    "logout": "Вийти",
+    "logoutPending": "Вихід...",
+    "logoutError": "Не вдалося вийти. Перезавантаж сторінку і спробуй ще раз.",
     "emailVerificationNotice": {
       "title": "Ваш email ще не підтверджено.",
       "message": "Підтвердження email відкриває повний доступ до функцій словника й тренування слів. Ми надіслали лист для підтвердження. Перевірте пошту та відкрийте посилання. Якщо лист не прийшов, ви можете надіслати його ще раз.",

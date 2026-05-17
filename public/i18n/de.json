@@ -38,8 +38,41 @@
     },
     "training": {
       "kicker": "Training",
-      "title": "Wörter gezielt wiederholen",
-      "description": "Hier entsteht der Trainingsbereich für gesuchte und gespeicherte Wörter."
+      "title": "Wörter bewusst wiederholen",
+      "description": "Hier entsteht der Trainingsbereich für gesuchte und gespeicherte Wörter.",
+      "status": {
+        "loading": "Wörter für das Training werden geladen...",
+        "ready": "Wörter bereit zur Wiederholung: {{ count }}.",
+        "empty": "Aktuell gibt es keine Wörter, die zur Wiederholung bereit sind.",
+        "anonymous": {
+          "title": "Anmeldung erforderlich",
+          "message": "Melde dich an oder registriere dich, um die Wörter zu trainieren, die du im Wörterbuch gesucht hast."
+        },
+        "emailVerificationRequired": {
+          "title": "Email-Bestätigung erforderlich",
+          "message": "Bestätige deine Email-Adresse, um Zugriff auf das Worttraining zu erhalten."
+        },
+        "rateLimited": {
+          "title": "Zu viele Anfragen",
+          "message": "Das System hat die Anfragen vorübergehend begrenzt. Versuche es später noch einmal.",
+          "retryAfter": "Ein neuer Versuch ist ungefähr in {{ seconds }} Sekunden möglich."
+        },
+        "notImplemented": {
+          "title": "Training noch nicht implementiert",
+          "message": "Der Zugriff auf den protected endpoint funktioniert. Der Backend-Endpunkt existiert, aber die Wortwiederholung wird in Phase 14.x umgesetzt."
+        },
+        "csrfError": {
+          "title": "Sicherheitsprüfung fehlgeschlagen",
+          "message": "Aktualisiere die Seite und versuche es erneut."
+        },
+        "generalError": {
+          "title": "Training konnte nicht geladen werden",
+          "message": "Versuche es später erneut."
+        }
+      },
+      "actions": {
+        "retry": "Erneut laden"
+      }
     },
     "account": {
       "kicker": "Konto",

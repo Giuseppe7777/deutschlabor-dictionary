@@ -39,7 +39,40 @@
     "training": {
       "kicker": "Trening",
       "title": "Powtarzaj słowa świadomie",
-      "description": "Tutaj powstanie strefa treningu dla wyszukanych i zapisanych słów."
+      "description": "Tutaj powstanie strefa treningu dla wyszukanych i zapisanych słów.",
+      "status": {
+        "loading": "Ładujemy słowa do treningu...",
+        "ready": "Słowa gotowe do powtórki: {{ count }}.",
+        "empty": "Obecnie nie ma słów gotowych do powtórki.",
+        "anonymous": {
+          "title": "Wymagane logowanie",
+          "message": "Zaloguj się albo zarejestruj, aby trenować słowa wyszukane w słowniku."
+        },
+        "emailVerificationRequired": {
+          "title": "Wymagane potwierdzenie emaila",
+          "message": "Potwierdź adres email, aby uzyskać dostęp do treningu słów."
+        },
+        "rateLimited": {
+          "title": "Zbyt wiele zapytań",
+          "message": "System tymczasowo ograniczył zapytania. Spróbuj ponownie trochę później.",
+          "retryAfter": "Ponowna próba będzie możliwa za około {{ seconds }} sekund."
+        },
+        "notImplemented": {
+          "title": "Trening nie jest jeszcze zaimplementowany",
+          "message": "Dostęp do protected endpoint działa. Backend endpoint istnieje, ale logika powtarzania słów zostanie wdrożona w etapie 14.x."
+        },
+        "csrfError": {
+          "title": "Kontrola bezpieczeństwa nie powiodła się",
+          "message": "Odśwież stronę i spróbuj ponownie."
+        },
+        "generalError": {
+          "title": "Nie udało się załadować treningu",
+          "message": "Spróbuj ponownie później."
+        }
+      },
+      "actions": {
+        "retry": "Załaduj ponownie"
+      }
     },
     "account": {
       "kicker": "Konto",

@@ -21,7 +21,7 @@
     "logoutError": "Не вдалося вийти. Перезавантаж сторінку і спробуй ще раз.",
     "emailVerificationNotice": {
       "title": "Ваш email ще не підтверджено.",
-      "message": "Підтвердження email відкриває повний доступ до функцій словника й тренування слів. Ми надіслали лист для підтвердження. Перевірте пошту та відкрийте посилання. Якщо лист не прийшов, ви можете надіслати його ще раз.",
+      "message": "Підтвердіть email, щоб активувати акаунт і користуватися базовими функціями: словником, історією пошуку та простим тренуванням слів. Розширені функції Premium — адаптивне тренування, AI-пояснення, avatar і детальна статистика — будуть доступні окремо після підключення плану Premium. Якщо лист не прийшов, ви можете надіслати його ще раз.",
       "resendAction": "Надіслати лист ще раз",
       "resendSending": "Надсилаємо...",
       "resendSuccess": "Лист для підтвердження email надіслано ще раз.",
@@ -76,8 +76,88 @@
     },
     "account": {
       "kicker": "Кабінет",
-      "title": "Твоя особиста зона",
-      "description": "Тут буде профіль, мовні налаштування і безпека."
+      "title": "Керування акаунтом DeutschLabor",
+      "description": "Тут буде центр профілю, налаштувань словника, тренування, плану, оплати й безпеки.",
+      "overview": {
+        "accountStatusLabel": "Стан акаунта",
+        "emailLabel": "Email",
+        "emailHint": "Email береться з поточного стану авторизації.",
+        "emailStatusLabel": "Підтвердження email",
+        "emailStatusHint": "Підтверджений email активує акаунт і відкриває базові функції DeutschLabor.",
+        "planLabel": "Поточний план",
+        "planFree": "Free",
+        "planHint": "Free дає базовий словник, історію пошуку та просте тренування. Premium пізніше відкриє адаптивне тренування, AI-пояснення, avatar і детальну статистику.",
+        "emailStatus": {
+          "loading": "Перевіряємо...",
+          "verified": "Підтверджено",
+          "unverified": "Не підтверджено",
+          "notAvailable": "Недоступно"
+        },
+        "accountStatus": {
+          "loading": "Перевіряємо стан акаунта...",
+          "active": "Активний",
+          "emailVerificationRequired": "Потрібне підтвердження email",
+          "anonymous": "Гість",
+          "error": "Помилка стану акаунта"
+        }
+      },
+      "sections": {
+        "overview": {
+          "kicker": "Профіль",
+          "title": "Огляд акаунта",
+          "description": "Базова інформація про користувача й поточний стан доступу.",
+          "status": "Основа",
+          "items": {
+            "profile": "Профіль користувача з email і майбутніми полями імені.",
+            "email": "Статус підтвердження email.",
+            "access": "Стан доступу: full або limited."
+          }
+        },
+        "preferences": {
+          "kicker": "Налаштування",
+          "title": "Словник і тренування",
+          "description": "Мовні налаштування, які потім використовуватимуть пошук, вправи й avatar.",
+          "status": "Наступний API",
+          "items": {
+            "interfaceLanguage": "Мова інтерфейсу.",
+            "defaultDictionaryPair": "Основна мовна пара словника.",
+            "trainingExplanationLanguage": "Мова пояснень у тренуванні."
+          }
+        },
+        "billing": {
+          "kicker": "План",
+          "title": "Plan & Billing",
+          "description": "Секція для Free/Premium, лімітів, майбутнього Stripe Checkout і billing portal.",
+          "status": "Skeleton",
+          "items": {
+            "currentPlan": "Поточний план: Free.",
+            "premiumFeatures": "Premium відкриє adaptive training, AI explanations, avatar і statistics.",
+            "billingManagement": "Керування оплатою з’явиться після backend billing API."
+          }
+        },
+        "security": {
+          "kicker": "Безпека",
+          "title": "Security & Sign-in",
+          "description": "Місце для passkeys, backup passkey, recovery flow і підтвердження email.",
+          "status": "Planned",
+          "items": {
+            "passkeys": "Список passkeys буде додано пізніше.",
+            "recovery": "Recovery через verified email буде спроєктовано окремо.",
+            "emailVerification": "Підтвердження email лишається частиною доступу до повних функцій."
+          }
+        },
+        "sessions": {
+          "kicker": "Пристрої",
+          "title": "Sessions & Devices",
+          "description": "Майбутній перегляд активних сесій і пристроїв.",
+          "status": "Future",
+          "items": {
+            "currentSession": "Поточна сесія вже існує через session cookie.",
+            "otherDevices": "Інші пристрої будуть показані після sessions API.",
+            "logoutDevices": "Вихід з інших пристроїв буде backend-controlled."
+          }
+        }
+      }
     },
     "login": {
       "kicker": "Вхід",
@@ -182,10 +262,10 @@
       "title": "Підтвердження email-адреси",
       "checking": "Перевіряємо посилання для підтвердження email...",
       "missingToken": "Посилання для підтвердження неповне. Token відсутній.",
-      "success": "Email успішно підтверджено. Повний доступ до функцій DeutschLabor активовано.",
+      "success": "Email успішно підтверджено. Акаунт активовано, базові функції DeutschLabor доступні.",
       "invalidOrExpired": "Посилання для підтвердження недійсне або протерміноване. Спробуйте надіслати лист ще раз.",
       "generalError": "Не вдалося підтвердити email. Спробуйте пізніше.",
-      "alreadyVerified": "Email уже був підтверджений. Повний доступ до функцій DeutschLabor активний.",
+      "alreadyVerified": "Email уже був підтверджений. Акаунт активний, базові функції DeutschLabor доступні.",
       "invalid": "Посилання для підтвердження недійсне. Надішліть лист для підтвердження ще раз. Якщо ви вже надсилали новий лист, відкрийте посилання з останнього листа.",
       "expired": "Посилання для підтвердження протерміноване. Надішліть лист для підтвердження ще раз."
     }

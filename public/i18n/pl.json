@@ -21,7 +21,7 @@
     "logoutError": "Wylogowanie nie powiodło się. Odśwież stronę i spróbuj ponownie.",
     "emailVerificationNotice": {
       "title": "Twój email nie został jeszcze potwierdzony.",
-      "message": "Potwierdzenie emaila daje pełny dostęp do funkcji słownika i treningu słów. Wysłaliśmy email z potwierdzeniem. Sprawdź pocztę i otwórz link. Jeśli email nie dotarł, możesz wysłać go ponownie.",
+      "message": "Potwierdź email, aby aktywować konto i korzystać z podstawowych funkcji: słownika, historii wyszukiwania i prostego treningu słów. Rozszerzone funkcje Premium — adaptacyjny trening, wyjaśnienia AI, avatar i szczegółowe statystyki — będą dostępne osobno po włączeniu planu Premium. Jeśli email nie dotarł, możesz wysłać go ponownie.",
       "resendAction": "Wyślij email ponownie",
       "resendSending": "Wysyłanie...",
       "resendSuccess": "Email potwierdzający został wysłany ponownie.",
@@ -76,8 +76,88 @@
     },
     "account": {
       "kicker": "Konto",
-      "title": "Twoja osobista strefa",
-      "description": "Tutaj powstanie profil, ustawienia języka i bezpieczeństwo."
+      "title": "Zarządzanie kontem DeutschLabor",
+      "description": "Tutaj powstanie centrum profilu, ustawień słownika, treningu, planu, płatności i bezpieczeństwa.",
+      "overview": {
+        "accountStatusLabel": "Stan konta",
+        "emailLabel": "Email",
+        "emailHint": "Adres email pochodzi z aktualnego stanu uwierzytelnienia.",
+        "emailStatusLabel": "Potwierdzenie email",
+        "emailStatusHint": "Potwierdzony email aktywuje konto i odblokowuje podstawowe funkcje DeutschLabor.",
+        "planLabel": "Aktualny plan",
+        "planFree": "Free",
+        "planHint": "Free obejmuje słownik, historię wyszukiwania i prosty trening. Premium później odblokuje adaptacyjny trening, wyjaśnienia AI, avatar i szczegółowe statystyki.",
+        "emailStatus": {
+          "loading": "Sprawdzamy...",
+          "verified": "Potwierdzony",
+          "unverified": "Niepotwierdzony",
+          "notAvailable": "Niedostępne"
+        },
+        "accountStatus": {
+          "loading": "Sprawdzamy stan konta...",
+          "active": "Aktywne",
+          "emailVerificationRequired": "Wymagane potwierdzenie email",
+          "anonymous": "Gość",
+          "error": "Błąd stanu konta"
+        }
+      },
+      "sections": {
+        "overview": {
+          "kicker": "Profil",
+          "title": "Przegląd konta",
+          "description": "Podstawowe informacje o użytkowniku i aktualnym stanie dostępu.",
+          "status": "Podstawa",
+          "items": {
+            "profile": "Profil użytkownika z emailem i przyszłymi polami imienia.",
+            "email": "Status potwierdzenia email.",
+            "access": "Stan dostępu: full albo limited."
+          }
+        },
+        "preferences": {
+          "kicker": "Ustawienia",
+          "title": "Słownik i trening",
+          "description": "Ustawienia językowe, które później będą używane przez wyszukiwanie, ćwiczenia i avatar.",
+          "status": "Następne API",
+          "items": {
+            "interfaceLanguage": "Język interfejsu.",
+            "defaultDictionaryPair": "Domyślna para językowa słownika.",
+            "trainingExplanationLanguage": "Język wyjaśnień w treningu."
+          }
+        },
+        "billing": {
+          "kicker": "Plan",
+          "title": "Plan i płatności",
+          "description": "Sekcja dla Free/Premium, limitów, przyszłego Stripe Checkout i billing portal.",
+          "status": "Skeleton",
+          "items": {
+            "currentPlan": "Aktualny plan: Free.",
+            "premiumFeatures": "Premium odblokuje adaptive training, AI explanations, avatar i statistics.",
+            "billingManagement": "Zarządzanie płatnościami pojawi się po backend billing API."
+          }
+        },
+        "security": {
+          "kicker": "Bezpieczeństwo",
+          "title": "Bezpieczeństwo i logowanie",
+          "description": "Miejsce na passkeys, backup passkey, recovery flow i potwierdzenie email.",
+          "status": "Planowane",
+          "items": {
+            "passkeys": "Lista passkeys zostanie dodana później.",
+            "recovery": "Recovery przez verified email zostanie zaprojektowane osobno.",
+            "emailVerification": "Potwierdzenie email pozostaje częścią dostępu do pełnych funkcji."
+          }
+        },
+        "sessions": {
+          "kicker": "Urządzenia",
+          "title": "Sesje i urządzenia",
+          "description": "Przyszły przegląd aktywnych sesji i urządzeń.",
+          "status": "Przyszłość",
+          "items": {
+            "currentSession": "Aktualna sesja już istnieje przez session cookie.",
+            "otherDevices": "Inne urządzenia będą pokazane po sessions API.",
+            "logoutDevices": "Wylogowanie z innych urządzeń będzie kontrolowane przez backend."
+          }
+        }
+      }
     },
     "login": {
       "kicker": "Logowanie",
@@ -182,10 +262,10 @@
       "title": "Potwierdź adres email",
       "checking": "Sprawdzamy link potwierdzający email...",
       "missingToken": "Link potwierdzający jest niepełny. Brakuje tokena.",
-      "success": "Email został pomyślnie potwierdzony. Pełny dostęp do DeutschLabor jest teraz aktywny.",
+      "success": "Email został pomyślnie potwierdzony. Konto jest aktywne, a podstawowe funkcje DeutschLabor są dostępne.",
       "invalidOrExpired": "Link potwierdzający jest nieprawidłowy albo wygasł. Wyślij email potwierdzający ponownie.",
       "generalError": "Nie udało się potwierdzić emaila. Spróbuj ponownie później.",
-      "alreadyVerified": "Email był już potwierdzony. Pełny dostęp do DeutschLabor jest aktywny.",
+      "alreadyVerified": "Email był już potwierdzony. Konto jest aktywne, a podstawowe funkcje DeutschLabor są dostępne.",
       "invalid": "Link potwierdzający jest nieprawidłowy. Wyślij email potwierdzający ponownie. Jeśli już poproszono o nowy email, otwórz link z najnowszej wiadomości.",
       "expired": "Link potwierdzający wygasł. Wyślij email potwierdzający ponownie."
     }

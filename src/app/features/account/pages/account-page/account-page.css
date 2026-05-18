@@ -1,13 +1,26 @@
-.page-placeholder {
-  max-width: 48rem;
-  padding: clamp(1.5rem, 4vw, 3rem);
-  border: 1px solid var(--app-color-border);
-  border-radius: 1.5rem;
-  background: var(--app-color-surface);
+.account-page {
+  display: grid;
+  gap: clamp(1.25rem, 3vw, 2rem);
+  width: 100%;
 }
 
-.page-kicker {
-  margin: 0 0 0.75rem;
+.account-hero,
+.summary-card,
+.account-section-card {
+  border: 1px solid var(--app-color-border);
+  background: var(--app-color-surface);
+  box-shadow: 0 1.25rem 3rem rgba(15, 23, 42, 0.06);
+}
+
+.account-hero {
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border-radius: 1.75rem;
+}
+
+.page-kicker,
+.section-kicker,
+.account-card-label {
+  margin: 0;
   color: var(--app-color-text-muted);
   font-size: var(--app-font-size-small);
   font-weight: var(--app-font-weight-bold);
@@ -15,15 +28,148 @@
   text-transform: uppercase;
 }
 
-.page-placeholder h1 {
+.account-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: end;
+  margin-top: 0.75rem;
+}
+
+.account-hero h1 {
+  max-width: 46rem;
   margin: 0;
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(2rem, 5vw, 3.75rem);
   line-height: 1.05;
 }
 
-.page-placeholder p {
-  max-width: 38rem;
+.account-intro {
+  max-width: 46rem;
   margin: 1rem 0 0;
   color: var(--app-color-text-muted);
   font-size: var(--app-font-size-body);
+}
+
+.account-access-card,
+.summary-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border-radius: 1.25rem;
+}
+
+.account-access-card {
+  border: 1px solid #b6cefa;
+  background: #eff6ff;
+}
+
+.account-access-card strong,
+.summary-card strong {
+  overflow-wrap: anywhere;
+  font-size: 1.15rem;
+  line-height: 1.25;
+}
+
+.account-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.summary-card p {
+  margin: 0;
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-small);
+}
+
+.account-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.account-section-card {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  border-radius: 1.5rem;
+}
+
+.section-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.section-card-header h2 {
+  margin: 0.35rem 0 0;
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  line-height: 1.2;
+}
+
+.section-status {
+  flex: 0 0 auto;
+  border: 1px solid var(--app-color-border);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  background: color-mix(in srgb, var(--app-color-surface) 92%, black);
+  color: var(--app-color-text-muted);
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+  white-space: nowrap;
+}
+
+.section-description {
+  margin: 0;
+  color: var(--app-color-text-muted);
+}
+
+.section-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.section-list li {
+  position: relative;
+  padding-left: 1.15rem;
+  color: var(--app-color-text);
+  font-size: var(--app-font-size-ui);
+}
+
+.section-list li::before {
+  position: absolute;
+  top: 0.65em;
+  left: 0;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: #111827;
+  content: '';
+}
+
+@media (max-width: 900px) {
+  .account-hero-grid,
+  .account-summary-grid,
+  .account-sections {
+    grid-template-columns: 1fr;
+  }
+
+  .account-access-card {
+    max-width: 28rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .section-card-header {
+    display: grid;
+  }
+
+  .section-status {
+    justify-self: start;
+    white-space: normal;
+  }
 }

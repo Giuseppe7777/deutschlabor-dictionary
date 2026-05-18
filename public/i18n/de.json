@@ -21,7 +21,7 @@
     "logoutError": "Abmeldung fehlgeschlagen. Lade die Seite neu und versuche es erneut.",
     "emailVerificationNotice": {
       "title": "Deine E-Mail ist noch nicht bestätigt.",
-      "message": "Mit der Bestätigung deiner E-Mail erhältst du vollen Zugriff auf die Wörterbuch- und Worttrainingsfunktionen. Wir haben dir eine Bestätigungs-E-Mail gesendet. Prüfe dein Postfach und öffne den Link. Wenn die E-Mail nicht angekommen ist, kannst du sie erneut senden.",
+      "message": "Bestätige deine E-Mail-Adresse, um dein Konto zu aktivieren und die Basisfunktionen zu nutzen: Wörterbuch, Suchverlauf und einfaches Worttraining. Erweiterte Premium-Funktionen — adaptives Training, KI-Erklärungen, Avatar und detaillierte Statistiken — werden später separat mit dem Premium-Plan verfügbar sein. Wenn die E-Mail nicht angekommen ist, kannst du sie erneut senden.",
       "resendAction": "E-Mail erneut senden",
       "resendSending": "Wird gesendet...",
       "resendSuccess": "Die Bestätigungs-E-Mail wurde erneut gesendet.",
@@ -76,8 +76,88 @@
     },
     "account": {
       "kicker": "Konto",
-      "title": "Dein persönlicher Bereich",
-      "description": "Hier entsteht der Bereich für Profil, Spracheinstellungen und Sicherheit."
+      "title": "DeutschLabor-Konto verwalten",
+      "description": "Hier entsteht die zentrale Stelle für Profil, Wörterbuch-Einstellungen, Training, Plan, Abrechnung und Sicherheit.",
+      "overview": {
+        "accountStatusLabel": "Kontostatus",
+        "emailLabel": "E-Mail",
+        "emailHint": "Die E-Mail-Adresse kommt aus dem aktuellen Authentifizierungsstatus.",
+        "emailStatusLabel": "E-Mail-Bestätigung",
+        "emailStatusHint": "Eine bestätigte E-Mail aktiviert das Konto und schaltet die Basisfunktionen von DeutschLabor frei.",
+        "planLabel": "Aktueller Plan",
+        "planFree": "Free",
+        "planHint": "Free bietet Wörterbuch, Suchverlauf und einfaches Training. Premium wird später adaptives Training, KI-Erklärungen, Avatar und detaillierte Statistiken freischalten.",
+        "emailStatus": {
+          "loading": "Wird geprüft...",
+          "verified": "Bestätigt",
+          "unverified": "Nicht bestätigt",
+          "notAvailable": "Nicht verfügbar"
+        },
+        "accountStatus": {
+          "loading": "Kontostatus wird geprüft...",
+          "active": "Aktiv",
+          "emailVerificationRequired": "E-Mail-Bestätigung erforderlich",
+          "anonymous": "Gast",
+          "error": "Fehler beim Kontostatus"
+        }
+      },
+      "sections": {
+        "overview": {
+          "kicker": "Profil",
+          "title": "Kontoübersicht",
+          "description": "Grundinformationen über den Benutzer und den aktuellen Zugriffsstatus.",
+          "status": "Basis",
+          "items": {
+            "profile": "Benutzerprofil mit E-Mail und späteren Namensfeldern.",
+            "email": "Status der E-Mail-Bestätigung.",
+            "access": "Zugriffsstatus: full oder limited."
+          }
+        },
+        "preferences": {
+          "kicker": "Einstellungen",
+          "title": "Wörterbuch und Training",
+          "description": "Spracheinstellungen, die später von Suche, Übungen und Avatar verwendet werden.",
+          "status": "Nächste API",
+          "items": {
+            "interfaceLanguage": "Sprache der Benutzeroberfläche.",
+            "defaultDictionaryPair": "Standard-Sprachpaar des Wörterbuchs.",
+            "trainingExplanationLanguage": "Sprache für Erklärungen im Training."
+          }
+        },
+        "billing": {
+          "kicker": "Plan",
+          "title": "Plan & Abrechnung",
+          "description": "Bereich für Free/Premium, Limits, zukünftiges Stripe Checkout und Billing Portal.",
+          "status": "Skeleton",
+          "items": {
+            "currentPlan": "Aktueller Plan: Free.",
+            "premiumFeatures": "Premium schaltet adaptive training, AI explanations, avatar und statistics frei.",
+            "billingManagement": "Die Zahlungsverwaltung erscheint nach der Backend-Billing-API."
+          }
+        },
+        "security": {
+          "kicker": "Sicherheit",
+          "title": "Sicherheit & Anmeldung",
+          "description": "Bereich für Passkeys, Backup-Passkey, Recovery Flow und E-Mail-Bestätigung.",
+          "status": "Geplant",
+          "items": {
+            "passkeys": "Die Liste der Passkeys wird später hinzugefügt.",
+            "recovery": "Recovery über verified email wird separat geplant.",
+            "emailVerification": "Die E-Mail-Bestätigung bleibt Teil des Zugriffs auf vollständige Funktionen."
+          }
+        },
+        "sessions": {
+          "kicker": "Geräte",
+          "title": "Sitzungen & Geräte",
+          "description": "Zukünftige Übersicht über aktive Sitzungen und Geräte.",
+          "status": "Später",
+          "items": {
+            "currentSession": "Die aktuelle Sitzung existiert bereits über das Session-Cookie.",
+            "otherDevices": "Andere Geräte werden nach der Sessions-API angezeigt.",
+            "logoutDevices": "Das Abmelden anderer Geräte wird vom Backend kontrolliert."
+          }
+        }
+      }
     },
     "login": {
       "kicker": "Anmeldung",
@@ -182,10 +262,10 @@
       "title": "E-Mail-Adresse bestätigen",
       "checking": "Der Bestätigungslink wird geprüft...",
       "missingToken": "Der Bestätigungslink ist unvollständig. Das Token fehlt.",
-      "success": "Deine E-Mail wurde erfolgreich bestätigt. Der volle Zugriff auf DeutschLabor ist jetzt aktiv.",
+      "success": "Die E-Mail wurde erfolgreich bestätigt. Das Konto ist aktiviert und die Basisfunktionen von DeutschLabor sind verfügbar.",
       "invalidOrExpired": "Der Bestätigungslink ist ungültig oder abgelaufen. Sende die E-Mail zur Bestätigung erneut.",
       "generalError": "Die E-Mail konnte nicht bestätigt werden. Versuche es später erneut.",
-      "alreadyVerified": "Deine E-Mail war bereits bestätigt. Der volle Zugriff auf DeutschLabor ist aktiv.",
+      "alreadyVerified": "Die E-Mail wurde bereits bestätigt. Das Konto ist aktiv und die Basisfunktionen von DeutschLabor sind verfügbar.",
       "invalid": "Der Bestätigungslink ist ungültig. Sende die Bestätigungs-E-Mail erneut. Wenn du bereits eine neue E-Mail angefordert hast, öffne den Link aus der neuesten E-Mail.",
       "expired": "Der Bestätigungslink ist abgelaufen. Sende die Bestätigungs-E-Mail erneut."
     }

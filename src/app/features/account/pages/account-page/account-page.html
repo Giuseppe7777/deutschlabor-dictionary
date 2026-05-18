@@ -1,5 +1,84 @@
-<section class="page-placeholder">
-  <p class="page-kicker">{{ 'pages.account.kicker' | translate }}</p>
-  <h1>{{ 'pages.account.title' | translate }}</h1>
-  <p>{{ 'pages.account.description' | translate }}</p>
+<section class="account-page">
+  <header class="account-hero">
+    <p class="page-kicker">{{ 'pages.account.kicker' | translate }}</p>
+
+    <div class="account-hero-grid">
+      <div>
+        <h1>{{ 'pages.account.title' | translate }}</h1>
+        <p class="account-intro">{{ 'pages.account.description' | translate }}</p>
+      </div>
+
+      <div class="account-access-card">
+        <span class="account-card-label">
+          {{ 'pages.account.overview.accountStatusLabel' | translate }}
+        </span>
+
+        <strong>{{ accountStatusKey() | translate }}</strong>
+      </div>
+    </div>
+  </header>
+
+  <div class="account-summary-grid">
+    <article class="summary-card">
+      <span class="account-card-label">
+        {{ 'pages.account.overview.emailLabel' | translate }}
+      </span>
+
+      <strong>{{ userEmail() }}</strong>
+
+      <p>{{ 'pages.account.overview.emailHint' | translate }}</p>
+    </article>
+
+    <article class="summary-card">
+      <span class="account-card-label">
+        {{ 'pages.account.overview.emailStatusLabel' | translate }}
+      </span>
+
+      <strong>{{ emailStatusKey() | translate }}</strong>
+
+      <p>{{ 'pages.account.overview.emailStatusHint' | translate }}</p>
+    </article>
+
+    <article class="summary-card">
+      <span class="account-card-label">
+        {{ 'pages.account.overview.planLabel' | translate }}
+      </span>
+
+      <strong>{{ 'pages.account.overview.planFree' | translate }}</strong>
+
+      <p>{{ 'pages.account.overview.planHint' | translate }}</p>
+    </article>
+  </div>
+
+  <div class="account-sections">
+    @for (section of accountSections; track section.key) {
+      <article class="account-section-card">
+        <div class="section-card-header">
+          <div>
+            <p class="section-kicker">
+              {{ 'pages.account.sections.' + section.key + '.kicker' | translate }}
+            </p>
+
+            <h2>
+              {{ 'pages.account.sections.' + section.key + '.title' | translate }}
+            </h2>
+          </div>
+
+          <span class="section-status">
+            {{ section.statusKey | translate }}
+          </span>
+        </div>
+
+        <p class="section-description">
+          {{ 'pages.account.sections.' + section.key + '.description' | translate }}
+        </p>
+
+        <ul class="section-list">
+          @for (itemKey of section.itemKeys; track itemKey) {
+            <li>{{ itemKey | translate }}</li>
+          }
+        </ul>
+      </article>
+    }
+  </div>
 </section>

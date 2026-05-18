@@ -21,7 +21,7 @@
     "logoutError": "A kijelentkezés nem sikerült. Töltsd újra az oldalt, és próbáld meg újra.",
     "emailVerificationNotice": {
       "title": "Az emailed még nincs megerősítve.",
-      "message": "Az email megerősítése teljes hozzáférést ad a szótár és a szótanulás funkcióihoz. Elküldtük a megerősítő emailt. Ellenőrizd a postafiókodat, és nyisd meg a linket. Ha az email nem érkezett meg, újra elküldheted.",
+      "message": "Erősítsd meg az email-címedet, hogy aktiváld a fiókodat és használd az alapfunkciókat: szótár, keresési előzmények és egyszerű szótanulás. A fejlettebb Premium funkciók — adaptív gyakorlás, AI-magyarázatok, avatar és részletes statisztikák — később külön, a Premium csomaggal lesznek elérhetők. Ha az email nem érkezett meg, újra elküldheted.",
       "resendAction": "Email újraküldése",
       "resendSending": "Küldés...",
       "resendSuccess": "A megerősítő email újra el lett küldve.",
@@ -76,8 +76,88 @@
     },
     "account": {
       "kicker": "Fiók",
-      "title": "A személyes felületed",
-      "description": "Itt készül a profil, a nyelvi beállítások és a biztonsági rész."
+      "title": "DeutschLabor-fiók kezelése",
+      "description": "Itt lesz a profil, a szótárbeállítások, a gyakorlás, az előfizetési terv, a fizetés és a biztonság központi helye.",
+      "overview": {
+        "accountStatusLabel": "Fiók állapota",
+        "emailLabel": "Email",
+        "emailHint": "Az email-cím az aktuális hitelesítési állapotból származik.",
+        "emailStatusLabel": "Email megerősítése",
+        "emailStatusHint": "A megerősített email aktiválja a fiókot és megnyitja a DeutschLabor alapfunkcióit.",
+        "planLabel": "Aktuális terv",
+        "planFree": "Free",
+        "planHint": "A Free tartalmazza a szótárt, a keresési előzményeket és az egyszerű gyakorlást. A Premium később feloldja az adaptív gyakorlást, az AI-magyarázatokat, az avatart és a részletes statisztikákat.",
+        "emailStatus": {
+          "loading": "Ellenőrzés...",
+          "verified": "Megerősítve",
+          "unverified": "Nincs megerősítve",
+          "notAvailable": "Nem elérhető"
+        },
+        "accountStatus": {
+          "loading": "Fiókállapot ellenőrzése...",
+          "active": "Aktív",
+          "emailVerificationRequired": "Email-megerősítés szükséges",
+          "anonymous": "Vendég",
+          "error": "Fiókállapot-hiba"
+        }
+      },
+      "sections": {
+        "overview": {
+          "kicker": "Profil",
+          "title": "Fiók áttekintése",
+          "description": "Alapvető felhasználói információk és az aktuális hozzáférési állapot.",
+          "status": "Alap",
+          "items": {
+            "profile": "Felhasználói profil email-címmel és későbbi névmezőkkel.",
+            "email": "Email-megerősítés állapota.",
+            "access": "Hozzáférési állapot: full vagy limited."
+          }
+        },
+        "preferences": {
+          "kicker": "Beállítások",
+          "title": "Szótár és gyakorlás",
+          "description": "Nyelvi beállítások, amelyeket később a keresés, a gyakorlatok és az avatar használ.",
+          "status": "Következő API",
+          "items": {
+            "interfaceLanguage": "Felület nyelve.",
+            "defaultDictionaryPair": "Alapértelmezett szótári nyelvpár.",
+            "trainingExplanationLanguage": "A gyakorlási magyarázatok nyelve."
+          }
+        },
+        "billing": {
+          "kicker": "Terv",
+          "title": "Terv és fizetés",
+          "description": "Szekció a Free/Premium csomaghoz, limitekhez, későbbi Stripe Checkout-hoz és billing portal-hoz.",
+          "status": "Skeleton",
+          "items": {
+            "currentPlan": "Aktuális terv: Free.",
+            "premiumFeatures": "A Premium feloldja az adaptive training, AI explanations, avatar és statistics funkciókat.",
+            "billingManagement": "A fizetés kezelése a backend billing API után jelenik meg."
+          }
+        },
+        "security": {
+          "kicker": "Biztonság",
+          "title": "Biztonság és bejelentkezés",
+          "description": "Hely a passkeys, backup passkey, recovery flow és email-megerősítés számára.",
+          "status": "Tervezett",
+          "items": {
+            "passkeys": "A passkeys listája később lesz hozzáadva.",
+            "recovery": "A verified email alapú recovery külön lesz megtervezve.",
+            "emailVerification": "Az email-megerősítés továbbra is a teljes funkciókhoz való hozzáférés része."
+          }
+        },
+        "sessions": {
+          "kicker": "Eszközök",
+          "title": "Munkamenetek és eszközök",
+          "description": "Aktív munkamenetek és eszközök jövőbeli áttekintése.",
+          "status": "Később",
+          "items": {
+            "currentSession": "Az aktuális munkamenet már létezik a session cookie-n keresztül.",
+            "otherDevices": "Más eszközök a sessions API után jelennek meg.",
+            "logoutDevices": "A kijelentkezés más eszközökről backend-controlled lesz."
+          }
+        }
+      }
     },
     "login": {
       "kicker": "Belépés",
@@ -182,10 +262,10 @@
       "title": "Email-cím megerősítése",
       "checking": "Ellenőrizzük az email-megerősítő linket...",
       "missingToken": "A megerősítő link hiányos. Hiányzik a token.",
-      "success": "Az email sikeresen meg lett erősítve. A DeutschLabor teljes hozzáférése most aktív.",
+      "success": "Az email sikeresen meg lett erősítve. A fiók aktív, és a DeutschLabor alapfunkciói elérhetők.",
       "invalidOrExpired": "A megerősítő link érvénytelen vagy lejárt. Küldd el újra a megerősítő emailt.",
       "generalError": "Az emailt nem sikerült megerősíteni. Próbáld meg később.",
-      "alreadyVerified": "Az email már meg volt erősítve. A teljes DeutschLabor-hozzáférés aktív.",
+      "alreadyVerified": "Az email már meg volt erősítve. A fiók aktív, és a DeutschLabor alapfunkciói elérhetők.",
       "invalid": "A megerősítő link érvénytelen. Küldd el újra a megerősítő emailt. Ha már kértél új emailt, a legutóbbi emailben lévő linket nyisd meg.",
       "expired": "A megerősítő link lejárt. Küldd el újra a megerősítő emailt."
     }

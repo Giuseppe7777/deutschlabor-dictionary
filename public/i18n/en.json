@@ -21,7 +21,7 @@
     "logoutError": "Logout failed. Reload the page and try again.",
     "emailVerificationNotice": {
       "title": "Your email is not verified yet.",
-      "message": "Verifying your email gives you full access to the dictionary and word training features. We have sent you a verification email. Check your inbox and open the link. If the email did not arrive, you can send it again.",
+      "message": "Verify your email address to activate your account and use the basic features: dictionary, search history and simple word training. Advanced Premium features — adaptive training, AI explanations, avatar and detailed statistics — will be available separately with the Premium plan. If the email did not arrive, you can send it again.",
       "resendAction": "Send email again",
       "resendSending": "Sending...",
       "resendSuccess": "The verification email has been sent again.",
@@ -76,8 +76,88 @@
     },
     "account": {
       "kicker": "Account",
-      "title": "Your personal area",
-      "description": "This will become the area for profile, language settings and security."
+      "title": "Manage your DeutschLabor account",
+      "description": "This will become the central place for profile, dictionary settings, training, plan, billing and security.",
+      "overview": {
+        "accountStatusLabel": "Account status",
+        "emailLabel": "Email",
+        "emailHint": "The email address comes from the current authentication state.",
+        "emailStatusLabel": "Email verification",
+        "emailStatusHint": "A verified email activates the account and unlocks the basic DeutschLabor features.",
+        "planLabel": "Current plan",
+        "planFree": "Free",
+        "planHint": "Free includes the dictionary, search history and simple training. Premium will later unlock adaptive training, AI explanations, avatar and detailed statistics.",
+        "emailStatus": {
+          "loading": "Checking...",
+          "verified": "Verified",
+          "unverified": "Not verified",
+          "notAvailable": "Not available"
+        },
+        "accountStatus": {
+          "loading": "Checking account status...",
+          "active": "Active",
+          "emailVerificationRequired": "Email verification required",
+          "anonymous": "Guest",
+          "error": "Account state error"
+        }
+      },
+      "sections": {
+        "overview": {
+          "kicker": "Profile",
+          "title": "Account overview",
+          "description": "Basic user information and current access state.",
+          "status": "Foundation",
+          "items": {
+            "profile": "User profile with email and future name fields.",
+            "email": "Email verification status.",
+            "access": "Access state: full or limited."
+          }
+        },
+        "preferences": {
+          "kicker": "Settings",
+          "title": "Dictionary and training",
+          "description": "Language settings that will later be used by search, exercises and avatar.",
+          "status": "Next API",
+          "items": {
+            "interfaceLanguage": "Interface language.",
+            "defaultDictionaryPair": "Default dictionary language pair.",
+            "trainingExplanationLanguage": "Language for training explanations."
+          }
+        },
+        "billing": {
+          "kicker": "Plan",
+          "title": "Plan & Billing",
+          "description": "Section for Free/Premium, limits, future Stripe Checkout and billing portal.",
+          "status": "Skeleton",
+          "items": {
+            "currentPlan": "Current plan: Free.",
+            "premiumFeatures": "Premium will unlock adaptive training, AI explanations, avatar and statistics.",
+            "billingManagement": "Billing management will appear after the backend billing API."
+          }
+        },
+        "security": {
+          "kicker": "Security",
+          "title": "Security & Sign-in",
+          "description": "Place for passkeys, backup passkey, recovery flow and email verification.",
+          "status": "Planned",
+          "items": {
+            "passkeys": "The passkey list will be added later.",
+            "recovery": "Recovery through verified email will be designed separately.",
+            "emailVerification": "Email verification remains part of access to full features."
+          }
+        },
+        "sessions": {
+          "kicker": "Devices",
+          "title": "Sessions & Devices",
+          "description": "Future overview of active sessions and devices.",
+          "status": "Future",
+          "items": {
+            "currentSession": "The current session already exists through the session cookie.",
+            "otherDevices": "Other devices will be shown after the sessions API.",
+            "logoutDevices": "Logging out other devices will be backend-controlled."
+          }
+        }
+      }
     },
     "login": {
       "kicker": "Login",
@@ -182,10 +262,10 @@
       "title": "Verify email address",
       "checking": "Checking the email verification link...",
       "missingToken": "The verification link is incomplete. The token is missing.",
-      "success": "Your email has been verified successfully. Full access to DeutschLabor is now active.",
+      "success": "Email verified successfully. The account is active and the basic DeutschLabor features are available.",
       "invalidOrExpired": "The verification link is invalid or expired. Send the verification email again.",
       "generalError": "The email could not be verified. Try again later.",
-      "alreadyVerified": "Your email was already verified. Full access to DeutschLabor is active.",
+      "alreadyVerified": "Email was already verified. The account is active and the basic DeutschLabor features are available.",
       "invalid": "The verification link is invalid. Send the verification email again. If you have already requested a new email, open the link from the latest email.",
       "expired": "The verification link has expired. Send the verification email again."
     }

@@ -112,6 +112,9 @@ src/app/layout/header/header.css
 src/app/layout/header/header.html
 src/app/layout/header/header.spec.ts
 src/app/layout/header/header.ts
+src/app/layout/header/language-switcher/language-switcher.css
+src/app/layout/header/language-switcher/language-switcher.html
+src/app/layout/header/language-switcher/language-switcher.ts
 src/app/layout/README.md
 src/app/ROUTING.md
 src/app/shared/README.md
@@ -1633,6 +1636,325 @@ describe('Header', () => {
     expect(component).toBeTruthy();
   });
 });
+</file>
+
+<file path="src/app/layout/header/language-switcher/language-switcher.css">
+.language-switcher {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.language-toggle {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.language-current {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid #111827;
+  border-radius: 999px;
+  background: #111827;
+  color: #ffffff;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-bold);
+}
+
+.language-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.25rem;
+  margin-left: -0.45rem;
+  padding-left: 0.45rem;
+  border: 1px solid #d1d5db;
+  border-left: 0;
+  border-radius: 0 999px 999px 0;
+  background: #ffffff;
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: var(--app-font-weight-bold);
+}
+
+.language-toggle:hover .language-current,
+.language-toggle[aria-expanded="true"] .language-current {
+  background: #1f2937;
+}
+
+.language-toggle:hover .language-chevron,
+.language-toggle[aria-expanded="true"] .language-chevron {
+  border-color: #111827;
+  color: #111827;
+}
+
+.language-menu {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  z-index: 20;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.language-menu button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--app-font-size-small);
+  font-weight: var(--app-font-weight-medium);
+  box-shadow: 0 0.45rem 1rem rgb(15 23 42 / 10%);
+  opacity: 0;
+  transform: translateY(-0.45rem) scale(0.92);
+  animation: language-circle-drop 260ms ease-out forwards;
+}
+
+.language-menu button:nth-child(1) {
+  animation-delay: 20ms;
+}
+
+.language-menu button:nth-child(2) {
+  animation-delay: 55ms;
+}
+
+.language-menu button:nth-child(3) {
+  animation-delay: 90ms;
+}
+
+.language-menu button:nth-child(4) {
+  animation-delay: 125ms;
+}
+
+.language-menu button:nth-child(5) {
+  animation-delay: 160ms;
+}
+
+.language-menu button:nth-child(6) {
+  animation-delay: 195ms;
+}
+
+.language-menu.is-closing button {
+  pointer-events: none;
+  animation: language-circle-close 260ms ease-in forwards;
+}
+
+.language-menu.is-closing button:nth-child(1) {
+  animation-delay: 20ms;
+}
+
+.language-menu.is-closing button:nth-child(2) {
+  animation-delay: 55ms;
+}
+
+.language-menu.is-closing button:nth-child(3) {
+  animation-delay: 90ms;
+}
+
+.language-menu.is-closing button:nth-child(4) {
+  animation-delay: 125ms;
+}
+
+.language-menu.is-closing button:nth-child(5) {
+  animation-delay: 160ms;
+}
+
+.language-menu.is-closing button:nth-child(6) {
+  animation-delay: 195ms;
+}
+
+.language-menu button:hover,
+.language-menu button.is-active {
+  border-color: #111827;
+  background: #111827;
+  color: #ffffff;
+}
+
+@keyframes language-circle-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-0.45rem) scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes language-circle-close {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-0.45rem) scale(0.92);
+  }
+}
+</file>
+
+<file path="src/app/layout/header/language-switcher/language-switcher.html">
+<div class="language-switcher" [attr.aria-label]="'header.language' | translate">
+  <button
+    type="button"
+    class="language-toggle"
+    aria-haspopup="listbox"
+    [attr.aria-expanded]="isLanguageMenuOpen()"
+    [attr.aria-label]="('header.language' | translate) + ': ' + currentLanguage().toUpperCase()"
+    [disabled]="isLanguageMenuClosing()"
+    (click)="toggleLanguageMenu()"
+  >
+    <span class="language-current">
+      {{ currentLanguage().toUpperCase() }}
+    </span>
+
+    <span class="language-chevron" aria-hidden="true">
+      ▾
+    </span>
+  </button>
+
+  @if (isLanguageMenuOpen()) {
+    <div
+      class="language-menu"
+      role="listbox"
+      [class.is-closing]="isLanguageMenuClosing()"
+    >
+      @for (language of supportedLanguages; track language) {
+        <button
+          type="button"
+          role="option"
+          [class.is-active]="language === currentLanguage()"
+          [attr.aria-selected]="language === currentLanguage()"
+          [disabled]="isLanguageMenuClosing()"
+          (click)="changeLanguage(language)"
+        >
+          {{ language.toUpperCase() }}
+        </button>
+      }
+    </div>
+  }
+</div>
+</file>
+
+<file path="src/app/layout/header/language-switcher/language-switcher.ts">
+import { Component, inject, output, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { TranslatePipe } from '@ngx-translate/core';
+
+import { InterfaceLanguage } from '../../../core/i18n/interface-language';
+import { InterfaceLanguageService } from '../../../core/i18n/interface-language.service';
+
+@Component({
+  selector: 'app-language-switcher',
+  imports: [TranslatePipe],
+  templateUrl: './language-switcher.html',
+  styleUrl: './language-switcher.css',
+})
+export class LanguageSwitcher {
+  private readonly router = inject(Router);
+  private readonly interfaceLanguageService = inject(InterfaceLanguageService);
+
+  readonly languageChangePendingChange = output<boolean>();
+
+  readonly supportedLanguages = this.interfaceLanguageService.supportedLanguages;
+  readonly currentLanguage = this.interfaceLanguageService.currentLanguage;
+
+  readonly isLanguageMenuOpen = signal(false);
+  readonly isLanguageMenuClosing = signal(false);
+
+  private readonly languageMenuAnimationMs = 430;
+  private readonly languageHeaderFadeMs = 180;
+
+  toggleLanguageMenu(): void {
+    if (this.isLanguageMenuClosing()) {
+      return;
+    }
+
+    if (this.isLanguageMenuOpen()) {
+      this.closeLanguageMenuAfterAnimation();
+      return;
+    }
+
+    this.isLanguageMenuOpen.set(true);
+  }
+
+  changeLanguage(language: InterfaceLanguage): void {
+    if (this.isLanguageMenuClosing()) {
+      return;
+    }
+
+    if (language === this.currentLanguage()) {
+      this.closeLanguageMenuAfterAnimation();
+      return;
+    }
+
+    const targetUrl = this.buildUrlWithLanguage(language);
+
+    this.languageChangePendingChange.emit(true);
+
+    this.closeLanguageMenuAfterAnimation(() => {
+      void this.router.navigateByUrl(targetUrl).finally(() => {
+        setTimeout(() => {
+          this.languageChangePendingChange.emit(false);
+        }, this.languageHeaderFadeMs);
+      });
+    });
+  }
+
+  private closeLanguageMenuAfterAnimation(afterClosed?: () => void): void {
+    if (!this.isLanguageMenuOpen()) {
+      afterClosed?.();
+      return;
+    }
+
+    this.isLanguageMenuClosing.set(true);
+
+    setTimeout(() => {
+      this.isLanguageMenuOpen.set(false);
+      this.isLanguageMenuClosing.set(false);
+      afterClosed?.();
+    }, this.languageMenuAnimationMs);
+  }
+
+  private buildUrlWithLanguage(language: InterfaceLanguage): string {
+    const [pathAndQuery, fragment] = this.router.url.split('#');
+    const [path, query] = pathAndQuery.split('?');
+
+    const segments = path.split('/').filter(Boolean);
+
+    if (segments.length === 0) {
+      segments.push(language);
+    } else {
+      segments[0] = language;
+    }
+
+    const targetPath = `/${segments.join('/')}`;
+    const targetQuery = query ? `?${query}` : '';
+    const targetFragment = fragment ? `#${fragment}` : '';
+
+    return `${targetPath}${targetQuery}${targetFragment}`;
+  }
+}
 </file>
 
 <file path="src/app/layout/README.md">
@@ -4359,184 +4681,6 @@ export class App implements OnInit {
   gap: 1rem;
 }
 
-.language-switcher {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.language-toggle {
-  display: inline-flex;
-  align-items: center;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  font: inherit;
-  padding: 0;
-}
-
-.language-current {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 1px solid #111827;
-  border-radius: 999px;
-  background: #111827;
-  color: #ffffff;
-  font-size: var(--app-font-size-small);
-  font-weight: var(--app-font-weight-bold);
-}
-
-.language-chevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.35rem;
-  height: 2.25rem;
-  margin-left: -0.45rem;
-  padding-left: 0.45rem;
-  border: 1px solid #d1d5db;
-  border-left: 0;
-  border-radius: 0 999px 999px 0;
-  background: #ffffff;
-  color: #374151;
-  font-size: 0.9rem;
-  font-weight: var(--app-font-weight-bold);
-}
-
-.language-toggle:hover .language-current,
-.language-toggle[aria-expanded="true"] .language-current {
-  background: #1f2937;
-}
-
-.language-toggle:hover .language-chevron,
-.language-toggle[aria-expanded="true"] .language-chevron {
-  border-color: #111827;
-  color: #111827;
-}
-
-.language-menu {
-  position: absolute;
-  top: calc(100% + 0.45rem);
-  left: 0;
-  right: auto;
-  z-index: 20;
-  display: grid;
-  gap: 0.35rem;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.language-menu button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 1px solid #d1d5db;
-  border-radius: 999px;
-  background: #ffffff;
-  color: #374151;
-  cursor: pointer;
-  font: inherit;
-  font-size: var(--app-font-size-small);
-  font-weight: var(--app-font-weight-medium);
-  box-shadow: 0 0.45rem 1rem rgb(15 23 42 / 10%);
-  opacity: 0;
-  transform: translateY(-0.45rem) scale(0.92);
-  animation: language-circle-drop 260ms ease-out forwards;
-}
-
-.language-menu button:nth-child(1) {
-  animation-delay: 20ms;
-}
-
-.language-menu button:nth-child(2) {
-  animation-delay: 55ms;
-}
-
-.language-menu button:nth-child(3) {
-  animation-delay: 90ms;
-}
-
-.language-menu button:nth-child(4) {
-  animation-delay: 125ms;
-}
-
-.language-menu button:nth-child(5) {
-  animation-delay: 160ms;
-}
-
-.language-menu button:nth-child(6) {
-  animation-delay: 195ms;
-}
-
-.language-menu.is-closing button {
-  pointer-events: none;
-  animation: language-circle-close 260ms ease-in forwards;
-}
-
-.language-menu.is-closing button:nth-child(1) {
-  animation-delay: 20ms;
-}
-
-.language-menu.is-closing button:nth-child(2) {
-  animation-delay: 55ms;
-}
-
-.language-menu.is-closing button:nth-child(3) {
-  animation-delay: 90ms;
-}
-
-.language-menu.is-closing button:nth-child(4) {
-  animation-delay: 125ms;
-}
-
-.language-menu.is-closing button:nth-child(5) {
-  animation-delay: 160ms;
-}
-
-.language-menu.is-closing button:nth-child(6) {
-  animation-delay: 195ms;
-}
-
-@keyframes language-circle-close {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-
-  to {
-    opacity: 0;
-    transform: translateY(-0.45rem) scale(0.92);
-  }
-}
-
-.language-menu button:hover,
-.language-menu button.is-active {
-  border-color: #111827;
-  background: #111827;
-  color: #ffffff;
-}
-
-@keyframes language-circle-drop {
-  from {
-    opacity: 0;
-    transform: translateY(-0.45rem) scale(0.92);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 .auth-links {
   display: flex;
   align-items: center;
@@ -4727,46 +4871,9 @@ export class App implements OnInit {
   </nav>
 
   <div class="header-actions">
-    <div class="language-switcher" [attr.aria-label]="'header.language' | translate">
-      <button
-        type="button"
-        class="language-toggle"
-        aria-haspopup="listbox"
-        [attr.aria-expanded]="isLanguageMenuOpen()"
-        [attr.aria-label]="('header.language' | translate) + ': ' + currentLanguage().toUpperCase()"
-        [disabled]="isLanguageMenuClosing()"
-        (click)="toggleLanguageMenu()"
-      >
-        <span class="language-current">
-          {{ currentLanguage().toUpperCase() }}
-        </span>
-
-        <span class="language-chevron" aria-hidden="true">
-          ▾
-        </span>
-      </button>
-
-      @if (isLanguageMenuOpen()) {
-        <div
-          class="language-menu"
-          role="listbox"
-          [class.is-closing]="isLanguageMenuClosing()"
-        >
-          @for (language of supportedLanguages; track language) {
-            <button
-              type="button"
-              role="option"
-              [class.is-active]="language === currentLanguage()"
-              [attr.aria-selected]="language === currentLanguage()"
-              [disabled]="isLanguageMenuClosing()"
-              (click)="changeLanguage(language)"
-            >
-              {{ language.toUpperCase() }}
-            </button>
-          }
-        </div>
-      }
-    </div>
+    <app-language-switcher
+      (languageChangePendingChange)="setLanguageChangePending($event)"
+    />
 
     @if (isAuthenticated()) {
       <div class="user-area">
@@ -4833,12 +4940,12 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { finalize } from 'rxjs';
 
 import { InterfaceLanguageService } from '../../core/i18n/interface-language.service';
-import { InterfaceLanguage } from '../../core/i18n/interface-language';
 import { AuthStateService } from '../../features/auth/services/auth-state.service';
+import { LanguageSwitcher } from './language-switcher/language-switcher';
 
 @Component({
   selector: 'app-header',
-  imports: [RouterLink, RouterLinkActive, TranslatePipe],
+  imports: [RouterLink, RouterLinkActive, TranslatePipe, LanguageSwitcher],
   templateUrl: './header.html',
   styleUrl: './header.css',
 })
@@ -4847,14 +4954,8 @@ export class Header {
   private readonly interfaceLanguageService = inject(InterfaceLanguageService);
   private readonly authState = inject(AuthStateService);
 
-  readonly supportedLanguages = this.interfaceLanguageService.supportedLanguages;
   readonly currentLanguage = this.interfaceLanguageService.currentLanguage;
-  readonly isLanguageMenuOpen = signal(false);
-  readonly isLanguageMenuClosing = signal(false);
   readonly isLanguageChangePending = signal(false);
-
-  private readonly languageMenuAnimationMs = 430;
-  private readonly languageHeaderFadeMs = 180;
 
   readonly isAnonymous = this.authState.isAnonymous;
   readonly isAuthenticated = this.authState.isAuthenticated;
@@ -4877,55 +4978,8 @@ export class Header {
     return ['/', this.currentLanguage(), ...segments];
   }
 
-  toggleLanguageMenu(): void {
-    if (this.isLanguageMenuClosing()) {
-      return;
-    }
-
-    if (this.isLanguageMenuOpen()) {
-      this.closeLanguageMenuAfterAnimation();
-      return;
-    }
-
-    this.isLanguageMenuOpen.set(true);
-  }
-
-  changeLanguage(language: InterfaceLanguage): void {
-    if (this.isLanguageMenuClosing()) {
-      return;
-    }
-
-    if (language === this.currentLanguage()) {
-      this.closeLanguageMenuAfterAnimation();
-      return;
-    }
-
-    const targetUrl = this.buildUrlWithLanguage(language);
-
-    this.isLanguageChangePending.set(true);
-
-    this.closeLanguageMenuAfterAnimation(() => {
-      void this.router.navigateByUrl(targetUrl).finally(() => {
-        setTimeout(() => {
-          this.isLanguageChangePending.set(false);
-        }, this.languageHeaderFadeMs);
-      });
-    });
-  }
-
-  private closeLanguageMenuAfterAnimation(afterClosed?: () => void): void {
-    if (!this.isLanguageMenuOpen()) {
-      afterClosed?.();
-      return;
-    }
-
-    this.isLanguageMenuClosing.set(true);
-
-    setTimeout(() => {
-      this.isLanguageMenuOpen.set(false);
-      this.isLanguageMenuClosing.set(false);
-      afterClosed?.();
-    }, this.languageMenuAnimationMs);
+  setLanguageChangePending(isPending: boolean): void {
+    this.isLanguageChangePending.set(isPending);
   }
 
   logout(): void {
@@ -4957,25 +5011,6 @@ export class Header {
           this.logoutErrorKey.set('auth.logoutError');
         },
       });
-  }
-
-  private buildUrlWithLanguage(language: InterfaceLanguage): string {
-    const [pathAndQuery, fragment] = this.router.url.split('#');
-    const [path, query] = pathAndQuery.split('?');
-
-    const segments = path.split('/').filter(Boolean);
-
-    if (segments.length === 0) {
-      segments.push(language);
-    } else {
-      segments[0] = language;
-    }
-
-    const targetPath = `/${segments.join('/')}`;
-    const targetQuery = query ? `?${query}` : '';
-    const targetFragment = fragment ? `#${fragment}` : '';
-
-    return `${targetPath}${targetQuery}${targetFragment}`;
   }
 }
 </file>
